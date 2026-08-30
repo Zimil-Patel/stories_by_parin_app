@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:stories_by_parin/providers/event_provider.dart';
+import 'package:stories_by_parin/providers/project_provider.dart';
+import 'package:stories_by_parin/screens/project_screen.dart';
 
-void main(){
+void main() {
   runApp(StoriesBYP());
 }
 
@@ -9,6 +13,17 @@ class StoriesBYP extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp();
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProjectProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Stories BYP',
+        theme: ThemeData(useMaterial3: true),
+        home: const ProjectScreen(),
+      ),
+    );
   }
 }
