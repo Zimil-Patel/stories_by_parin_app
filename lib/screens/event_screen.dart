@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:stories_by_parin/models/event_model.dart';
 import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/providers/event_provider.dart';
+import 'package:stories_by_parin/screens/photo_screen.dart';
 
 class EventScreen extends StatefulWidget {
   final Project project;
@@ -30,7 +31,7 @@ class _EventScreenState extends State<EventScreen> {
 
       body: Consumer<EventProvider>(
         builder: (context, provider, child) {
-          /// if projects are loading show loader
+          /// if events are loading show loader
           if (provider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -40,9 +41,9 @@ class _EventScreenState extends State<EventScreen> {
             return Center(child: Text(provider.error!));
           }
 
-          /// show all projects list if no projects then show message
+          /// show all events list if no event then show message
           if (provider.events.isEmpty) {
-            return Center(child: Text("No projects found"));
+            return Center(child: Text("No events found"));
           }
 
           final events= provider.events;
@@ -54,6 +55,9 @@ class _EventScreenState extends State<EventScreen> {
               final event = events[index];
 
               return ListTile(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => PhotoScreen(event: event),));
+                },
                 title: Text(event.name),
                 subtitle: Text("Event ID: ${event.id}"),
                 trailing: Icon(Icons.chevron_right_rounded),
