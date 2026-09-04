@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
-import 'package:stories_by_parin/screens/event_screen.dart';
+import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
 
 class ProjectScreen extends StatefulWidget {
   const ProjectScreen({super.key});

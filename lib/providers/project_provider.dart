@@ -1,3 +1,5 @@
+import 'dart:developer' as console;
+
 import 'package:flutter/material.dart';
 import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/services/api_service.dart';
@@ -25,6 +27,8 @@ class ProjectProvider extends ChangeNotifier {
       _projects = await _apiService.getAllProjects();
     } catch(error) {
       _error = error.toString();
+
+      console.log("=> $_error");
     } finally {
       _isLoading = false;
       notifyListeners();
