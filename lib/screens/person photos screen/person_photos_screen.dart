@@ -65,7 +65,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
             itemBuilder: (context, index) {
               final photo = photos[index];
 
-              return PhotoGridItem(photo: photo);
+              return PhotoGridItem(photo: photo, index: index, photos: photos,);
             },
           );
         },

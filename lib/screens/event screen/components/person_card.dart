@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../config/app_config.dart';
 import '../../../models/person_model.dart';
 
 class PersonCard extends StatelessWidget {
@@ -24,7 +25,7 @@ class PersonCard extends StatelessWidget {
           Expanded(
             child: ClipOval(
               child: Image.network(
-                'http://127.0.0.1:8000/faces/${person.faceId}/image',
+                '${AppConfig.baseUrl}/faces/${person.faceId}/image',
 
                 width: 140,
 
