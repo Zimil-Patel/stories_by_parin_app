@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:stories_by_parin/providers/person_photo_provider.dart';
 import 'package:stories_by_parin/screens/photo%20screen/components/photo_grid_item.dart';
 
@@ -14,7 +15,8 @@ class PersonPhotoScreen extends StatefulWidget {
   });
 
   @override
-  State<PersonPhotoScreen> createState() => _PersonPhotoScreenState();
+  State<PersonPhotoScreen> createState() =>
+      _PersonPhotoScreenState();
 }
 
 class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
@@ -33,42 +35,178 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('photos')),
+      appBar: AppBar(
+        title: const Text('Person Photos'),
+      ),
 
       body: Consumer<PersonPhotoProvider>(
         builder: (context, provider, child) {
-          /// if photos are loading show loader
+          // -------------------------------------------------
+          // LOADING STATE
+          // -------------------------------------------------
+
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
-          /// if there is any error show error
+          // -------------------------------------------------
+          // ERROR STATE
+          // -------------------------------------------------
+
           if (provider.error != null) {
-            return Center(child: Text(provider.error!));
+            return _PersonPhotoErrorState(
+              message: provider.error!,
+            );
           }
 
-          /// show all photos if no photos then show message
+          // -------------------------------------------------
+          // EMPTY STATE
+          // -------------------------------------------------
+
           if (provider.photos.isEmpty) {
-            return Center(child: Text("No photos found"));
+            return const _PersonPhotoEmptyState();
           }
 
           final photos = provider.photos;
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(8),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 4,
-              mainAxisSpacing: 4,
-            ),
-            itemCount: photos.length,
-            itemBuilder: (context, index) {
-              final photo = photos[index];
+          // -------------------------------------------------
+          // PHOTO GRID
+          // -------------------------------------------------
 
-              return PhotoGridItem(photo: photo, index: index, photos: photos,);
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+
+              int crossAxisCount;
+
+              if (width < 600) {
+                crossAxisCount = 3;
+              } else if (width < 1000) {
+                crossAxisCount = 5;
+              } else {
+                crossAxisCount = 7;
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                physics: const BouncingScrollPhysics(),
+                gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
+                ),
+                itemCount: photos.length,
+                itemBuilder: (context, index) {
+                  final photo = photos[index];
+
+                  return PhotoGridItem(
+                    photo: photo,
+                    index: index,
+                    photos: photos,
+                  );
+                },
+              );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------
+// EMPTY STATE
+// -------------------------------------------------
+
+class _PersonPhotoEmptyState extends StatelessWidget {
+  const _PersonPhotoEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.person_search_outlined,
+            size: 64,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No photos found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'No photos containing this person were found.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------
+// ERROR STATE
+// -------------------------------------------------
+
+class _PersonPhotoErrorState extends StatelessWidget {
+  final String message;
+
+  const _PersonPhotoErrorState({
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 56,
+              color: Theme.of(context)
+                  .colorScheme
+                  .error,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load photos',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

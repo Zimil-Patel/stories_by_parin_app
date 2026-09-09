@@ -30,11 +30,33 @@ class PhotoGridItem extends StatelessWidget {
           ),
         );
       },
+
+      // Clip the image so the rounded corners are visible.
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
+
         child: Image.network(
-          '${AppConfig.baseUrl}/photos/${photo.id}/image',
+          '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail',
           fit: BoxFit.cover,
+
+          // Keep the image from overflowing while loading.
+          frameBuilder: (
+              context,
+              child,
+              frame,
+              wasSynchronouslyLoaded,
+              ) {
+            if (wasSynchronouslyLoaded) {
+              return child;
+            }
+
+            return AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              child: child,
+            );
+          },
 
           // Show loading indicator while the image is loading.
           loadingBuilder: (
@@ -47,22 +69,29 @@ class PhotoGridItem extends StatelessWidget {
             }
 
             return const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
               ),
             );
           },
 
-          // Show a simple error icon if the image cannot load.
+          // Show a simple error state if the image cannot load.
           errorBuilder: (
               context,
               error,
               stackTrace,
               ) {
-            return const Center(
-              child: Icon(
-                Icons.broken_image_outlined,
-                size: 32,
+            return const ColoredBox(
+              color: Colors.black12,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 30,
+                ),
               ),
             );
           },
