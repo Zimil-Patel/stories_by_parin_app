@@ -2,11 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:stories_by_parin/models/event_model.dart';
+
 import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/providers/event_provider.dart';
 import 'package:stories_by_parin/providers/people_provider.dart';
 import 'package:stories_by_parin/providers/selfie_search_provider.dart';
+
 import 'package:stories_by_parin/screens/event%20screen/components/person_card.dart';
 import 'package:stories_by_parin/screens/person%20photos%20screen/person_photos_screen.dart';
 import 'package:stories_by_parin/screens/photo%20screen/photo_screen.dart';
@@ -18,7 +19,10 @@ import 'components/find_me_card.dart';
 class EventScreen extends StatefulWidget {
   final Project project;
 
-  const EventScreen({super.key, required this.project});
+  const EventScreen({
+    super.key,
+    required this.project,
+  });
 
   @override
   State<EventScreen> createState() => _EventScreenState();
@@ -30,180 +34,316 @@ class _EventScreenState extends State<EventScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventProvider>().fetchEvents(widget.project.id);
+      context.read<EventProvider>().fetchEvents(
+        widget.project.id,
+      );
 
-      context.read<PeopleProvider>().fetchPeople(widget.project.id);
+      context.read<PeopleProvider>().fetchPeople(
+        widget.project.id,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Events')),
+      appBar: AppBar(
+        title: const Text('Events'),
+      ),
 
       body: Stack(
         children: [
-
-          /// Event Screen content
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Consumer<EventProvider>(
-                builder: (context, provider, child) {
-                  /// if events are loading show loader
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              // -------------------------------------------------
+              // EVENTS SECTION
+              // -------------------------------------------------
 
-                  /// if there is any error show error
-                  if (provider.error != null) {
-                    return Center(child: Text(provider.error!));
-                  }
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  20,
+                  16,
+                  10,
+                ),
+                child: Text(
+                  'Events',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
 
-                  /// show all events list if no event then show message
-                  if (provider.events.isEmpty) {
-                    return Center(child: Text("No events found"));
-                  }
+              Expanded(
+                child: Consumer<EventProvider>(
+                  builder: (context, provider, child) {
+                    // Show loading state.
+                    if (provider.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
 
-                  final events = provider.events;
+                    // Show error state.
+                    if (provider.error != null) {
+                      return Center(
+                        child: Text(
+                          provider.error!,
+                        ),
+                      );
+                    }
 
-                  return Expanded(
-                    child: ListView.builder(
+                    // Show empty state.
+                    if (provider.events.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No events found',
+                        ),
+                      );
+                    }
+
+                    final events = provider.events;
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+
                       itemCount: events.length,
-                      physics: BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
+
+                      separatorBuilder: (
+                          context,
+                          index,
+                          ) {
+                        return const SizedBox(height: 8);
+                      },
+
+                      itemBuilder: (
+                          context,
+                          index,
+                          ) {
                         final event = events[index];
 
-                        return ListTile(
+                        return _EventCard(
+                          eventName: event.name,
+                          eventId: event.id,
+
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PhotoScreen(event: event),
+                                builder: (context) =>
+                                    PhotoScreen(
+                                      event: event,
+                                    ),
                               ),
                             );
                           },
-                          title: Text(event.name),
-                          subtitle: Text("Event ID: ${event.id}"),
-                          trailing: Icon(Icons.chevron_right_rounded),
                         );
                       },
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
 
-              /// People faces
-              Consumer<PeopleProvider>(
-                builder: (context, provider, child) {
-                  if (provider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+              // -------------------------------------------------
+              // PEOPLE SECTION
+              // -------------------------------------------------
 
-                  if (provider.error != null) {
-                    return Center(child: Text(provider.error!));
-                  }
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  18,
+                  16,
+                  10,
+                ),
+                child: Text(
+                  'People',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
 
-                  if (provider.people.isEmpty) {
-                    return const Center(child: Text('No people found'));
-                  }
+              SizedBox(
+                height: 190,
+                child: Consumer<PeopleProvider>(
+                  builder: (context, provider, child) {
+                    // Show loading state.
+                    if (provider.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
 
-                  return SizedBox(
-                    height: 200,
-                    width: double.infinity,
-                    child: Row(
+                    // Show error state.
+                    if (provider.error != null) {
+                      return Center(
+                        child: Text(
+                          provider.error!,
+                        ),
+                      );
+                    }
+
+                    // Show empty state.
+                    if (provider.people.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No people found',
+                        ),
+                      );
+                    }
+
+                    return Row(
                       children: [
-                        FindMeCard(
-                          onTap: () async {
-                            /// Show Loader/error/Navigation on selfie click
-                            final selfie = await Navigator.push<File>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SelfieSearchScreen(),
-                              ),
-                            );
+                        // -------------------------------------------------
+                        // FIND ME
+                        // -------------------------------------------------
 
-                            if (selfie == null || !context.mounted) {
-                              return;
-                            }
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                          ),
+                          child: FindMeCard(
+                            onTap: () async {
+                              // Open selfie screen.
+                              final selfie =
+                              await Navigator.push<File>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                  const SelfieSearchScreen(),
+                                ),
+                              );
 
-                            final selfieProvider = context.read<SelfieSearchProvider>();
-
-                            final success = await selfieProvider.searchSelfie(projectId: widget.project.id, selfie: selfie);
-
-                            if(!context.mounted){
-                              return;
-                            }
-
-                            if(success){
-                              final result = selfieProvider.result;
-
-                              if(result == null){
+                              if (selfie == null ||
+                                  !context.mounted) {
                                 return;
                               }
 
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SelfieResultScreen(
-                                    photos: result.photos,
-                                  ),
-                                ),
+                              final selfieProvider =
+                              context.read<
+                                  SelfieSearchProvider>();
+
+                              // Search the selfie against
+                              // the project's face clusters.
+                              final success =
+                              await selfieProvider.searchSelfie(
+                                projectId:
+                                widget.project.id,
+                                selfie: selfie,
                               );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    selfieProvider.error ??
-                                        'Unable to find your photos.',
+
+                              if (!context.mounted) {
+                                return;
+                              }
+
+                              if (success) {
+                                final result =
+                                    selfieProvider.result;
+
+                                if (result == null) {
+                                  return;
+                                }
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        SelfieResultScreen(
+                                          photos: result.photos,
+                                        ),
                                   ),
-                                ),
-                              );
-                            }
-                          },
+                                );
+                              } else {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      selfieProvider.error ??
+                                          'Unable to find your photos.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         ),
+
+                        // -------------------------------------------------
+                        // PEOPLE LIST
+                        // -------------------------------------------------
 
                         Expanded(
                           child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                            ),
                             scrollDirection: Axis.horizontal,
+                            physics:
+                            const BouncingScrollPhysics(),
 
                             itemCount: provider.people.length,
 
-                            itemBuilder: (context, index) {
-                              final person = provider.people[index];
+                            itemBuilder: (
+                                context,
+                                index,
+                                ) {
+                              final person =
+                              provider.people[index];
 
-                              return PersonCard(
-                                person: person,
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  right: 12,
+                                ),
+                                child: PersonCard(
+                                  person: person,
 
-                                onTap: () {
-                                  // We'll connect this to the person's
-                                  // matching photos screen next.
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PersonPhotoScreen(
-                                        projectId: widget.project.id,
-                                        faceId: person.faceId,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            PersonPhotoScreen(
+                                              projectId:
+                                              widget.project.id,
+                                              faceId:
+                                              person.faceId,
+                                            ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               );
                             },
                           ),
                         ),
                       ],
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
+
+              const SizedBox(height: 16),
             ],
           ),
 
-          /// Selfie search loading overlay
+          // -------------------------------------------------
+          // SELFIE SEARCH LOADING OVERLAY
+          // -------------------------------------------------
+
           Consumer<SelfieSearchProvider>(
-            builder: (context, provider, child) {
+            builder: (
+                context,
+                provider,
+                child,
+                ) {
               if (!provider.isLoading) {
                 return const SizedBox.shrink();
               }
@@ -221,6 +361,114 @@ class _EventScreenState extends State<EventScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+// ---------------------------------------------------------
+// EVENT CARD
+// ---------------------------------------------------------
+
+class _EventCard extends StatelessWidget {
+  final String eventName;
+  final int eventId;
+  final VoidCallback onTap;
+
+  const _EventCard({
+    required this.eventName,
+    required this.eventId,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest,
+
+      borderRadius: BorderRadius.circular(14),
+
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+
+        onTap: onTap,
+
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+
+          child: Row(
+            children: [
+              // Event icon.
+              Container(
+                width: 46,
+                height: 46,
+
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
+
+                  borderRadius: BorderRadius.circular(12),
+                ),
+
+                child: Icon(
+                  Icons.photo_library_outlined,
+
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onPrimaryContainer,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              // Event information.
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      eventName,
+
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      'Event ID: $eventId',
+
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Icon(
+                Icons.chevron_right_rounded,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
