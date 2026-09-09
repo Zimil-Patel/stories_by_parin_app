@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/app_config.dart';
@@ -14,12 +15,10 @@ class PhotoViewerScreen extends StatefulWidget {
   });
 
   @override
-  State<PhotoViewerScreen> createState() =>
-      _PhotoViewerScreenState();
+  State<PhotoViewerScreen> createState() => _PhotoViewerScreenState();
 }
 
-class _PhotoViewerScreenState
-    extends State<PhotoViewerScreen> {
+class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   late final PageController _pageController;
 
   late int _currentIndex;
@@ -30,9 +29,11 @@ class _PhotoViewerScreenState
 
     _currentIndex = widget.initialIndex;
 
-    _pageController = PageController(
-      initialPage: widget.initialIndex,
-    );
+    _pageController = PageController(initialPage: widget.initialIndex);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadNearbyPhotos(widget.initialIndex);
+    });
   }
 
   @override
@@ -40,6 +41,23 @@ class _PhotoViewerScreenState
     _pageController.dispose();
 
     super.dispose();
+  }
+
+  void _preloadNearbyPhotos(int index) {
+    final indexesToPreload = <int>[index - 1, index + 1];
+
+    for (final photoIndex in indexesToPreload) {
+      // Ignore indexes outside the photo list.
+      if (photoIndex < 0 || photoIndex >= widget.photos.length) {
+        continue;
+      }
+
+      final photo = widget.photos[photoIndex];
+
+      final imageUrl = '${AppConfig.baseUrl}/photos/${photo.id}/image';
+
+      precacheImage(CachedNetworkImageProvider(imageUrl), context);
+    }
   }
 
   @override
@@ -61,6 +79,8 @@ class _PhotoViewerScreenState
               setState(() {
                 _currentIndex = index;
               });
+
+              _preloadNearbyPhotos(index);
             },
 
             itemBuilder: (context, index) {
@@ -71,7 +91,6 @@ class _PhotoViewerScreenState
                   minScale: 1.0,
                   maxScale: 5.0,
 
-
                   child: _ViewerPhoto(photo: photo),
                 ),
               );
@@ -81,7 +100,6 @@ class _PhotoViewerScreenState
           // -------------------------------------------------
           // CLOSE BUTTON
           // -------------------------------------------------
-
           SafeArea(
             child: Align(
               alignment: Alignment.topLeft,
@@ -100,7 +118,6 @@ class _PhotoViewerScreenState
           // -------------------------------------------------
           // PHOTO COUNTER
           // -------------------------------------------------
-
           SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
@@ -131,16 +148,11 @@ class _PhotoViewerScreenState
           // -------------------------------------------------
           // BOTTOM HINT
           // -------------------------------------------------
-
           SafeArea(
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                ),
+                padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
                 child: IgnorePointer(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -153,10 +165,7 @@ class _PhotoViewerScreenState
                     ),
                     child: const Text(
                       'Swipe to navigate • Pinch to zoom',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
                 ),
@@ -177,10 +186,7 @@ class _ViewerButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
 
-  const _ViewerButton({
-    required this.icon,
-    required this.onPressed,
-  });
+  const _ViewerButton({required this.icon, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -191,10 +197,7 @@ class _ViewerButton extends StatelessWidget {
       ),
       child: IconButton(
         onPressed: onPressed,
-        icon: Icon(
-          icon,
-          color: Colors.white,
-        ),
+        icon: Icon(icon, color: Colors.white),
       ),
     );
   }
@@ -207,17 +210,13 @@ class _ViewerButton extends StatelessWidget {
 class _ViewerPhoto extends StatelessWidget {
   final Photo photo;
 
-  const _ViewerPhoto({
-    required this.photo,
-  });
+  const _ViewerPhoto({required this.photo});
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailUrl =
-        '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail';
+    final thumbnailUrl = '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail';
 
-    final originalUrl =
-        '${AppConfig.baseUrl}/photos/${photo.id}/image';
+    final originalUrl = '${AppConfig.baseUrl}/photos/${photo.id}/image';
 
     return Stack(
       alignment: Alignment.center,
@@ -226,18 +225,19 @@ class _ViewerPhoto extends StatelessWidget {
         // THUMBNAIL
         // -------------------------------------------------
         //
-        // This loads quickly and stays visible while the
-        // full-resolution image is loading.
+        // The thumbnail appears quickly while the original
+        // full-resolution photo is loading.
         //
 
-        Image.network(
-          thumbnailUrl,
+        CachedNetworkImage(
+          imageUrl: thumbnailUrl,
           fit: BoxFit.contain,
-          errorBuilder: (
-              context,
-              error,
-              stackTrace,
-              ) {
+
+          placeholder: (context, url) {
+            return const SizedBox.shrink();
+          },
+
+          errorWidget: (context, url, error) {
             return const SizedBox.shrink();
           },
         ),
@@ -246,40 +246,20 @@ class _ViewerPhoto extends StatelessWidget {
         // ORIGINAL PHOTO
         // -------------------------------------------------
         //
-        // The original image is displayed on top once it
-        // has finished loading.
+        // The original is displayed over the thumbnail
+        // once it has loaded.
         //
-
-        Image.network(
-          originalUrl,
+        CachedNetworkImage(
+          imageUrl: originalUrl,
           fit: BoxFit.contain,
 
-          frameBuilder: (
-              context,
-              child,
-              frame,
-              wasSynchronouslyLoaded,
-              ) {
-            if (wasSynchronouslyLoaded) {
-              return child;
-            }
-
-            if (frame == null) {
-              return const SizedBox.shrink();
-            }
-
-            return AnimatedOpacity(
-              opacity: 1.0,
-              duration: const Duration(milliseconds: 250),
-              child: child,
-            );
+          placeholder: (context, url) {
+            return const SizedBox.shrink();
           },
 
-          errorBuilder: (
-              context,
-              error,
-              stackTrace,
-              ) {
+          fadeInDuration: const Duration(milliseconds: 250),
+
+          errorWidget: (context, url, error) {
             return const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -292,10 +272,7 @@ class _ViewerPhoto extends StatelessWidget {
                   SizedBox(height: 12),
                   Text(
                     'Unable to load photo',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
