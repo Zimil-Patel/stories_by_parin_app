@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_zoom/photo_zoom.dart';
 
 import '../../config/app_config.dart';
 import '../../models/photo_model.dart';
@@ -19,8 +20,6 @@ class PhotoViewerScreen extends StatefulWidget {
 }
 
 class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
-  late final PageController _pageController;
-
   late int _currentIndex;
 
   @override
@@ -29,34 +28,54 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
     _currentIndex = widget.initialIndex;
 
-    _pageController = PageController(initialPage: widget.initialIndex);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _preloadNearbyPhotos(widget.initialIndex);
     });
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-
-    super.dispose();
-  }
-
+  // Preload the original images immediately before and after
+  // the currently visible photo.
   void _preloadNearbyPhotos(int index) {
-    final indexesToPreload = <int>[index - 1, index + 1];
+    final indexesToPreload = <int>[
+      index,
+      index - 1,
+      index + 1,
+    ];
 
     for (final photoIndex in indexesToPreload) {
-      // Ignore indexes outside the photo list.
-      if (photoIndex < 0 || photoIndex >= widget.photos.length) {
+      if (photoIndex < 0 ||
+          photoIndex >= widget.photos.length) {
         continue;
       }
 
       final photo = widget.photos[photoIndex];
 
-      final imageUrl = '${AppConfig.baseUrl}/photos/${photo.id}/image';
+      final thumbnailUrl =
+          '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail';
 
-      precacheImage(CachedNetworkImageProvider(imageUrl), context);
+      final originalUrl =
+          '${AppConfig.baseUrl}/photos/${photo.id}/image';
+
+      // Preload the small thumbnail.
+      // This gives us something lightweight to show immediately.
+      precacheImage(
+        CachedNetworkImageProvider(thumbnailUrl),
+        context,
+      ).catchError((error) {
+        debugPrint(
+          'Thumbnail preload failed for photo ${photo.id}: $error',
+        );
+      });
+
+      // Preload the full-resolution original.
+      precacheImage(
+        CachedNetworkImageProvider(originalUrl),
+        context,
+      ).catchError((error) {
+        debugPrint(
+          'Original preload failed for photo ${photo.id}: $error',
+        );
+      });
     }
   }
 
@@ -67,108 +86,71 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
       body: Stack(
         children: [
-          // -------------------------------------------------
-          // PHOTO PAGES
-          // -------------------------------------------------
-
-          PageView.builder(
-            controller: _pageController,
+          PhotoViewGallery.builder(
             itemCount: widget.photos.length,
+
+            builder: (context, index) {
+              final photo = widget.photos[index];
+
+              return PhotoViewGalleryPageOptions(
+                imageProvider: CachedNetworkImageProvider(
+                  '${AppConfig.baseUrl}/photos/${photo.id}/image',
+                ),
+
+                // The whole screen is used as the viewer area.
+                minScale: PhotoViewComputedScale.contained,
+
+                // Allow the user to zoom considerably into
+                // high-resolution wedding photos.
+                maxScale:
+                PhotoViewComputedScale.covered * 3,
+
+                // Keep the photo centered when it is not zoomed.
+                basePosition: Alignment.center,
+              );
+            },
+
+            // Start from the photo selected in the grid.
+            pageController: PageController(
+              initialPage: widget.initialIndex,
+            ),
+
+            backgroundDecoration: const BoxDecoration(
+              color: Colors.black,
+            ),
 
             onPageChanged: (index) {
               setState(() {
                 _currentIndex = index;
               });
 
+              // Preload the new photo's neighbors.
               _preloadNearbyPhotos(index);
             },
-
-            itemBuilder: (context, index) {
-              final photo = widget.photos[index];
-
-              return Center(
-                child: InteractiveViewer(
-                  minScale: 1.0,
-                  maxScale: 5.0,
-
-                  child: _ViewerPhoto(photo: photo),
-                ),
-              );
-            },
           ),
 
-          // -------------------------------------------------
-          // CLOSE BUTTON
-          // -------------------------------------------------
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: _ViewerButton(
-                  icon: Icons.close,
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
+          // Close button.
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 12,
+            child: _ViewerButton(
+              icon: Icons.close,
+              onTap: () {
+                Navigator.pop(context);
+              },
             ),
           ),
 
-          // -------------------------------------------------
-          // PHOTO COUNTER
-          // -------------------------------------------------
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_currentIndex + 1} / ${widget.photos.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // -------------------------------------------------
-          // BOTTOM HINT
-          // -------------------------------------------------
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-                child: IgnorePointer(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Swipe to navigate • Pinch to zoom',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                ),
+          // Photo counter.
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 12,
+            right: 16,
+            child: Text(
+              '${_currentIndex + 1} / ${widget.photos.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -178,108 +160,32 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   }
 }
 
-// -------------------------------------------------
-// VIEWER BUTTON
-// -------------------------------------------------
-
 class _ViewerButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
 
-  const _ViewerButton({required this.icon, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.black54,
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, color: Colors.white),
-      ),
-    );
-  }
-}
-
-// -------------------------------------------------
-// VIEWER PHOTO
-// -------------------------------------------------
-
-class _ViewerPhoto extends StatelessWidget {
-  final Photo photo;
-
-  const _ViewerPhoto({required this.photo});
+  const _ViewerButton({
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailUrl = '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail';
-
-    final originalUrl = '${AppConfig.baseUrl}/photos/${photo.id}/image';
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // -------------------------------------------------
-        // THUMBNAIL
-        // -------------------------------------------------
-        //
-        // The thumbnail appears quickly while the original
-        // full-resolution photo is loading.
-        //
-
-        CachedNetworkImage(
-          imageUrl: thumbnailUrl,
-          fit: BoxFit.contain,
-
-          placeholder: (context, url) {
-            return const SizedBox.shrink();
-          },
-
-          errorWidget: (context, url, error) {
-            return const SizedBox.shrink();
-          },
+    return Material(
+      color: Colors.black54,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(
+            icon,
+            color: Colors.white,
+          ),
         ),
-
-        // -------------------------------------------------
-        // ORIGINAL PHOTO
-        // -------------------------------------------------
-        //
-        // The original is displayed over the thumbnail
-        // once it has loaded.
-        //
-        CachedNetworkImage(
-          imageUrl: originalUrl,
-          fit: BoxFit.contain,
-
-          placeholder: (context, url) {
-            return const SizedBox.shrink();
-          },
-
-          fadeInDuration: const Duration(milliseconds: 250),
-
-          errorWidget: (context, url, error) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.white,
-                    size: 50,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Unable to load photo',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 }

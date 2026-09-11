@@ -67,11 +67,11 @@ class PhotoGridItem extends StatelessWidget {
           },
 
           // Slight fade when the image first appears.
-          fadeInDuration: const Duration(
-            milliseconds: 200,
-          ),
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
         ),
       ),
     );
   }
 }
+
