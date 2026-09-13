@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +20,10 @@ class PhotoScreen extends StatefulWidget {
 }
 
 class _PhotoScreenState extends State<PhotoScreen> {
+
+  Timer? _refreshTimer;
+
+
   @override
   void initState() {
     super.initState();
@@ -26,7 +32,25 @@ class _PhotoScreenState extends State<PhotoScreen> {
       context.read<PhotoProvider>().fetchAllPhotosOfEvent(
         widget.event.id,
       );
+
+      // _startAutoRefresh();
     });
+  }
+
+  void _startAutoRefresh(){
+    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      if(!mounted){
+        return;
+      }
+
+      context.read<PhotoProvider>().refreshPhotoSilently(widget.event.id);
+    },);
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -34,6 +58,25 @@ class _PhotoScreenState extends State<PhotoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.event.name),
+        actions: [
+          Consumer<PhotoProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                tooltip: provider.newestFirst
+                    ? 'Newest first'
+                    : 'Oldest first',
+                onPressed: () {
+                  provider.toggleSortOrder();
+                },
+                icon: Icon(
+                  provider.newestFirst
+                      ? Icons.arrow_downward_rounded
+                      : Icons.arrow_upward_rounded,
+                ),
+              );
+            },
+          ),
+        ],
       ),
 
       body: Consumer<PhotoProvider>(
@@ -88,29 +131,37 @@ class _PhotoScreenState extends State<PhotoScreen> {
                 crossAxisCount = 7;
               }
 
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-
-                physics: const BouncingScrollPhysics(),
-
-                gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 6,
-                  mainAxisSpacing: 6,
-                ),
-
-                itemCount: photos.length,
-
-                itemBuilder: (context, index) {
-                  final photo = photos[index];
-
-                  return PhotoGridItem(
-                    photo: photo,
-                    index: index,
-                    photos: photos,
+              return RefreshIndicator(
+                onRefresh: () {
+                  return context.read<PhotoProvider>().fetchAllPhotosOfEvent(
+                    widget.event.id,
                   );
                 },
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(12),
+
+                  physics: const AlwaysScrollableScrollPhysics(),
+
+                  gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                  ),
+
+                  itemCount: photos.length,
+
+                  itemBuilder: (context, index) {
+                    final photo = photos[index];
+
+                    return PhotoGridItem(
+                      key: ValueKey(photo.id),
+                      photo: photo,
+                      index: index,
+                      photos: photos,
+                    );
+                  },
+                ),
               );
             },
           );

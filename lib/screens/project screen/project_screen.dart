@@ -1,8 +1,10 @@
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
+
+import 'components/project_card.dart';
 
 class ProjectScreen extends StatefulWidget {
   const ProjectScreen({super.key});
@@ -52,14 +54,18 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
               final project = projects[index];
 
-              return ListTile(
+              return ProjectCard(
+                project: project,
                 onTap: () {
-                  /// Navigate to projects event screen
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => EventScreen(project: project),));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventScreen(
+                        project: project,
+                      ),
+                    ),
+                  );
                 },
-                title: Text(project.name),
-                subtitle: Text("Project ID: ${project.id}"),
-                trailing: Icon(Icons.chevron_right_rounded),
               );
 
             },

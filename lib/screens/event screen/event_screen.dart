@@ -106,44 +106,52 @@ class _EventScreenState extends State<EventScreen> {
 
                     final events = provider.events;
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      physics: const BouncingScrollPhysics(),
-
-                      itemCount: events.length,
-
-                      separatorBuilder: (
-                          context,
-                          index,
-                          ) {
-                        return const SizedBox(height: 8);
-                      },
-
-                      itemBuilder: (
-                          context,
-                          index,
-                          ) {
-                        final event = events[index];
-
-                        return _EventCard(
-                          eventName: event.name,
-                          eventId: event.id,
-
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    PhotoScreen(
-                                      event: event,
-                                    ),
-                              ),
-                            );
-                          },
+                    return RefreshIndicator(
+                      onRefresh: () {
+                        return context.read<EventProvider>().fetchEvents(
+                          widget.project.id,
                         );
                       },
+                      child: ListView.separated(
+
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: events.length,
+
+
+                        separatorBuilder: (
+                            context,
+                            index,
+                            ) {
+                          return const SizedBox(height: 8);
+                        },
+
+                        itemBuilder: (
+                            context,
+                            index,
+                            ) {
+                          final event = events[index];
+
+                          return _EventCard(
+                            eventName: event.name,
+                            eventId: event.id,
+
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      PhotoScreen(
+                                        event: event,
+                                      ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

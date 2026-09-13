@@ -92,20 +92,65 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             builder: (context, index) {
               final photo = widget.photos[index];
 
-              return PhotoViewGalleryPageOptions(
-                imageProvider: CachedNetworkImageProvider(
-                  '${AppConfig.baseUrl}/photos/${photo.id}/image',
+              return PhotoViewGalleryPageOptions.customChild(
+                // Keep the custom child at the same aspect ratio
+                // as the original photo.
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // -------------------------------------------------
+                    // CACHED THUMBNAIL
+                    // -------------------------------------------------
+                    CachedNetworkImage(
+                      imageUrl:
+                      '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail',
+                      fit: BoxFit.contain,
+                    ),
+
+                    // -------------------------------------------------
+                    // ORIGINAL PHOTO
+                    // -------------------------------------------------
+                    Image(
+                      image: CachedNetworkImageProvider(
+                        '${AppConfig.baseUrl}/photos/${photo.id}/image',
+                      ),
+                      fit: BoxFit.contain,
+
+                      // Keep the thumbnail visible while the original
+                      // high-resolution image is being decoded.
+                      loadingBuilder: (
+                          context,
+                          child,
+                          loadingProgress,
+                          ) {
+                        if (loadingProgress == null) {
+                          // Original image is fully loaded.
+                          return child;
+                        }
+
+                        // Return nothing while loading so the cached
+                        // thumbnail underneath remains visible.
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ),
 
-                // The whole screen is used as the viewer area.
+                // Tell photo_zoom the actual dimensions
+                // of the original photo.
+                childSize: Size(
+                  photo.width.toDouble(),
+                  photo.height.toDouble(),
+                ),
+
+                // Use the normal contained scale.
+                // We previously used * 2 only as a diagnostic test.
                 minScale: PhotoViewComputedScale.contained,
 
-                // Allow the user to zoom considerably into
-                // high-resolution wedding photos.
+                // Allow the user to zoom further into the photo.
                 maxScale:
                 PhotoViewComputedScale.covered * 3,
 
-                // Keep the photo centered when it is not zoomed.
                 basePosition: Alignment.center,
               );
             },
@@ -129,7 +174,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             },
           ),
 
-          // Close button.
+          // -------------------------------------------------
+          // CLOSE BUTTON
+          // -------------------------------------------------
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             left: 12,
@@ -141,7 +188,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             ),
           ),
 
-          // Photo counter.
+          // -------------------------------------------------
+          // PHOTO COUNTER
+          // -------------------------------------------------
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
             right: 16,
