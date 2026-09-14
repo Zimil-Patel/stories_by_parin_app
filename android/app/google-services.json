@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "173883973257",
+    "project_id": "stories-by-parin",
+    "storage_bucket": "stories-by-parin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:173883973257:android:a96510c94b00482cf03058",
+        "android_client_info": {
+          "package_name": "com.example.stories_by_parin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "173883973257-man5bsmekgn48qjuv98as529arl0vmmb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.stories_by_parin",
+            "certificate_hash": "5d6dec48c608271d21cfecfc4f37752148e20ef1"
+          }
+        },
+        {
+          "client_id": "173883973257-a8t81j0em7v83msgnjdr71ihd4nph15h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB12E5Qse9EQYZsEF0JVo_kBgw6A23BZDg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "173883973257-a8t81j0em7v83msgnjdr71ihd4nph15h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "173883973257-va7blcs6mkv5gedod70j1eomon0lo33h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.storiesByParin"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

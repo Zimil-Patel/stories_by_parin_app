@@ -1,0 +1,1 @@
+const bgImage = "assets/images/theme/base_layer.png";

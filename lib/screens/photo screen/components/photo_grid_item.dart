@@ -33,10 +33,10 @@ class PhotoGridItem extends StatelessWidget {
         );
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         child: CachedNetworkImage(
           imageUrl:
-          '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail',
+          '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail?v=${photo.createdAt}',
 
           fit: BoxFit.cover,
 

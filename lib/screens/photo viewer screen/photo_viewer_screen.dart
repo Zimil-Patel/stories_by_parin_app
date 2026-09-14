@@ -103,7 +103,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                     // -------------------------------------------------
                     CachedNetworkImage(
                       imageUrl:
-                      '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail',
+                      '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail?v=${photo.createdAt}',
                       fit: BoxFit.contain,
                     ),
 
@@ -112,7 +112,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                     // -------------------------------------------------
                     Image(
                       image: CachedNetworkImageProvider(
-                        '${AppConfig.baseUrl}/photos/${photo.id}/image',
+                        '${AppConfig.baseUrl}/photos/${photo.id}/image?v=${photo.createdAt}',
                       ),
                       fit: BoxFit.contain,
 

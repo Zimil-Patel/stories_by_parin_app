@@ -7,8 +7,19 @@ import 'package:stories_by_parin/providers/photo_provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/providers/selfie_search_provider.dart';
 import 'package:stories_by_parin/screens/project%20screen/project_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+
+Future<void> main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  /// Initialise firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(StoriesBYP());
 }
 
