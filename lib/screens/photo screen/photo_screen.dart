@@ -39,16 +39,16 @@ class _PhotoScreenState extends State<PhotoScreen> {
       // _startAutoRefresh();
     });
   }
-
-  void _startAutoRefresh(){
-    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      if(!mounted){
-        return;
-      }
-
-      context.read<PhotoProvider>().refreshPhotoSilently(widget.event.id);
-    },);
-  }
+  // Start auto fetching new photos
+  // void _startAutoRefresh(){
+  //   _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+  //     if(!mounted){
+  //       return;
+  //     }
+  //
+  //     context.read<PhotoProvider>().refreshPhotoSilently(widget.event.id);
+  //   },);
+  // }
 
   @override
   void dispose() {
@@ -68,7 +68,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 8.0),
             child: AppBar(
-              title: Text('${widget.event.name}'),
+              title: Text(widget.event.name),
               backgroundColor: Colors.white24,
               actions: [
                 Consumer<PhotoProvider>(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:stories_by_parin/models/photo_model.dart';
 import 'package:stories_by_parin/services/api_service.dart';
 
 import '../models/person_model.dart';

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as console;
 
 import 'package:stories_by_parin/config/app_config.dart';
 import 'package:stories_by_parin/models/event_model.dart';

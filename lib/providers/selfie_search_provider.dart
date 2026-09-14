@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:stories_by_parin/models/selfie_search_result_model.dart';
-import 'package:stories_by_parin/models/selfie_search_result_model.dart';
 import 'package:stories_by_parin/services/selfie_search_service.dart';
 
 class SelfieSearchProvider extends ChangeNotifier {

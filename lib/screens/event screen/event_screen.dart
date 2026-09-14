@@ -58,7 +58,7 @@ class _EventScreenState extends State<EventScreen> {
             filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 8.0),
             child: AppBar(
               scrolledUnderElevation: 0,
-              title: Text('${widget.project.name}'),
+              title: Text(widget.project.name),
               backgroundColor: Colors.white24,
             ),
           ),
