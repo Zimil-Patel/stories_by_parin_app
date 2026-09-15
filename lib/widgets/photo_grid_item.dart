@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:stories_by_parin/config/app_config.dart';
 
-import '../../../models/photo_model.dart';
-import '../../photo viewer screen/photo_viewer_screen.dart';
+import '../models/photo_model.dart';
+import '../screens/photo viewer screen/photo_viewer_screen.dart';
 
 class PhotoGridItem extends StatelessWidget {
   final Photo photo;

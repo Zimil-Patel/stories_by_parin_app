@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
 import 'package:stories_by_parin/utils/images.dart';
+import 'package:stories_by_parin/widgets/app_background.dart';
 
 import 'components/project_card.dart';
 
@@ -44,17 +45,14 @@ class _ProjectScreenState extends State<ProjectScreen> {
         ),
       ),
 
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage(bgImage), fit: BoxFit.cover),
-        ),
+      body: AppBackground(
         child: Consumer<ProjectProvider>(
           builder: (_, provider, child) {
             /// if projects are loading show loader
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
-
+        
             /// if there is any error show error
             if (provider.error != null) {
               return Center(
@@ -62,7 +60,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(provider.error ?? "Something went wrong"),
-
+        
                     TextButton(
                       onPressed: () {
                         context.read<ProjectProvider>().fetchProjects();
@@ -73,7 +71,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 ),
               );
             }
-
+        
             /// show all projects list if no projects then show message
             if (provider.projects.isEmpty) {
               return Center(
@@ -81,7 +79,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text("No projects found"),
-
+        
                     TextButton(
                       onPressed: () {
                         context.read<ProjectProvider>().fetchProjects();
@@ -92,9 +90,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 ),
               );
             }
-
+        
             final projects = provider.projects;
-
+        
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<ProjectProvider>().fetchProjects();
@@ -104,7 +102,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 physics: AlwaysScrollableScrollPhysics(),
                 itemBuilder: (context, index) {
                   final project = projects[index];
-
+        
                   return ProjectCard(
                     project: project,
                     onTap: () {

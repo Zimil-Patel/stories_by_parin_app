@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:stories_by_parin/providers/person_photo_provider.dart';
-import 'package:stories_by_parin/screens/photo%20screen/components/photo_grid_item.dart';
+import 'package:stories_by_parin/widgets/app_background.dart';
+import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
 import '../../utils/images.dart';
 
@@ -54,52 +55,49 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
         ),
       ),
 
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage(bgImage), fit: BoxFit.cover),
-        ),
+      body: AppBackground(
         child: Consumer<PersonPhotoProvider>(
           builder: (context, provider, child) {
             // -------------------------------------------------
             // LOADING STATE
             // -------------------------------------------------
-
+        
             if (provider.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-
+        
             // -------------------------------------------------
             // ERROR STATE
             // -------------------------------------------------
-
+        
             if (provider.error != null) {
               return _PersonPhotoErrorState(
                 message: provider.error!,
               );
             }
-
+        
             // -------------------------------------------------
             // EMPTY STATE
             // -------------------------------------------------
-
+        
             if (provider.photos.isEmpty) {
               return const _PersonPhotoEmptyState();
             }
-
+        
             final photos = provider.photos;
-
+        
             // -------------------------------------------------
             // PHOTO GRID
             // -------------------------------------------------
-
+        
             return LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-
+        
                 int crossAxisCount;
-
+        
                 if (width < 600) {
                   crossAxisCount = 3;
                 } else if (width < 1000) {
@@ -107,7 +105,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
                 } else {
                   crossAxisCount = 7;
                 }
-
+        
                 return GridView.builder(
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).padding.top + kToolbarHeight - 48, // Status bar + AppBar height + margin
@@ -115,7 +113,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
                     right: 8,
                     bottom: 16,
                   ),
-
+        
                   physics: AlwaysScrollableScrollPhysics(),
                   gridDelegate:
                   SliverGridDelegateWithFixedCrossAxisCount(
@@ -126,7 +124,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
                   itemCount: photos.length,
                   itemBuilder: (context, index) {
                     final photo = photos[index];
-
+        
                     return PhotoGridItem(
                       photo: photo,
                       index: index,

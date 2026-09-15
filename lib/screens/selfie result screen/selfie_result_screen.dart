@@ -2,7 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:stories_by_parin/models/photo_model.dart';
-import 'package:stories_by_parin/screens/photo%20screen/components/photo_grid_item.dart';
+import 'package:stories_by_parin/widgets/app_background.dart';
+import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
 import '../../utils/images.dart';
 
@@ -28,10 +29,7 @@ class SelfieResultScreen extends StatelessWidget {
         ),
       ),
 
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage(bgImage), fit: BoxFit.cover),
-        ),
+      body: AppBackground(
         child: photos.isEmpty
             ? const Center(child: Text('No photos found.'))
             : GridView.builder(

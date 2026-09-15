@@ -12,6 +12,7 @@ import 'package:stories_by_parin/providers/selfie_search_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/components/person_card.dart';
 import 'package:stories_by_parin/screens/person%20photos%20screen/person_photos_screen.dart';
 import 'package:stories_by_parin/screens/photo%20screen/photo_screen.dart';
+import 'package:stories_by_parin/widgets/app_background.dart';
 
 import '../../utils/images.dart';
 import '../selfie result screen/selfie_result_screen.dart';
@@ -65,10 +66,7 @@ class _EventScreenState extends State<EventScreen> {
         ),
       ),
 
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage(bgImage), fit: BoxFit.cover),
-        ),
+      body: AppBackground(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -81,7 +79,7 @@ class _EventScreenState extends State<EventScreen> {
                       child: CircularProgressIndicator(),
                     );
                   }
-              
+
                   // Show error state.
                   if (provider.error != null) {
                     return Center(
@@ -90,7 +88,7 @@ class _EventScreenState extends State<EventScreen> {
                       ),
                     );
                   }
-              
+
                   // Show empty state.
                   if (provider.events.isEmpty) {
                     return const Center(
@@ -99,9 +97,9 @@ class _EventScreenState extends State<EventScreen> {
                       ),
                     );
                   }
-              
+
                   final events = provider.events;
-              
+
                   return RefreshIndicator(
                     onRefresh: () {
                       return context.read<EventProvider>().fetchEvents(
@@ -118,25 +116,25 @@ class _EventScreenState extends State<EventScreen> {
                       ),
                       physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: events.length,
-              
-              
+
+
                       separatorBuilder: (
                           context,
                           index,
                           ) {
                         return const SizedBox(height: 8);
                       },
-              
+
                       itemBuilder: (
                           context,
                           index,
                           ) {
                         final event = events[index];
-              
+
                         return _EventCard(
                           eventName: event.name,
                           eventId: event.id,
-              
+
                           onTap: () {
                             Navigator.push(
                               context,

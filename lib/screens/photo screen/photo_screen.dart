@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 
 import 'package:stories_by_parin/models/event_model.dart';
 import 'package:stories_by_parin/providers/photo_provider.dart';
-import 'package:stories_by_parin/screens/photo%20screen/components/photo_grid_item.dart';
+import 'package:stories_by_parin/widgets/app_background.dart';
+import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
 import '../../utils/images.dart';
 
@@ -94,54 +95,51 @@ class _PhotoScreenState extends State<PhotoScreen> {
         ),
       ),
 
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage(bgImage), fit: BoxFit.cover),
-        ),
+      body: AppBackground(
         child: Consumer<PhotoProvider>(
           builder: (context, provider, child) {
             // -------------------------------------------------
             // LOADING
             // -------------------------------------------------
-
+        
             if (provider.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-
+        
             // -------------------------------------------------
             // ERROR
             // -------------------------------------------------
-
+        
             if (provider.error != null) {
               return _PhotoErrorState(
                 message: provider.error!,
               );
             }
-
+        
             // -------------------------------------------------
             // EMPTY
             // -------------------------------------------------
-
+        
             if (provider.photos.isEmpty) {
               return const _EmptyPhotoState();
             }
-
+        
             // -------------------------------------------------
             // PHOTO GRID
             // -------------------------------------------------
-
+        
             final photos = provider.photos;
-
+        
             return LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
-
+        
                 // Change the number of columns based on
                 // the available screen width.
                 int crossAxisCount;
-
+        
                 if (width < 600) {
                   crossAxisCount = 3;
                 } else if (width < 1000) {
@@ -149,7 +147,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
                 } else {
                   crossAxisCount = 7;
                 }
-
+        
                 return RefreshIndicator(
                   onRefresh: () {
                     return context.read<PhotoProvider>().fetchAllPhotosOfEvent(
@@ -163,21 +161,21 @@ class _PhotoScreenState extends State<PhotoScreen> {
                       right: 8,
                       bottom: 16,
                     ),
-
+        
                     physics: const AlwaysScrollableScrollPhysics(),
-
+        
                     gridDelegate:
                     SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
                       crossAxisSpacing: 6,
                       mainAxisSpacing: 6,
                     ),
-
+        
                     itemCount: photos.length,
-
+        
                     itemBuilder: (context, index) {
                       final photo = photos[index];
-
+        
                       return PhotoGridItem(
                         key: ValueKey(photo.id),
                         photo: photo,

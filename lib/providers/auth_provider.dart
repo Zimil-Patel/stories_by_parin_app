@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:stories_by_parin/services/auth_service.dart';
@@ -9,6 +11,10 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  StreamSubscription<User?>? _authSubscription;
+
+  bool _isInitializing= true;
+
   User? get user => _user;
 
   bool get isLoading => _isLoading;
@@ -16,6 +22,28 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
 
   bool get isLoggedIn => _user != null;
+
+  bool get isInitializing => _isInitializing;
+
+  AuthProvider(){
+    _listenToAuthState();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  /// listen to auth changes
+  void _listenToAuthState() {
+    _authSubscription = _authService.authStateChanges.listen((user) {
+      _user = user;
+      _isInitializing = false;
+
+      notifyListeners();
+    });
+  }
 
   /// Sign up user / create new user with email and password
   Future<bool> signUpWithEmail({required String email, required String password}) async {

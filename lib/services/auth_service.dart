@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -6,6 +8,10 @@ class AuthService {
   static final AuthService authService = AuthService._();
 
   AuthService._();
+
+  Stream<User?> get authStateChanges {
+    return _firebaseAuth.authStateChanges();
+  }
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
