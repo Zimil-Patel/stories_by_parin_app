@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
 import 'package:stories_by_parin/utils/images.dart';
@@ -40,6 +41,16 @@ class _ProjectScreenState extends State<ProjectScreen> {
               scrolledUnderElevation: 0,
               title: const Text('Projects'),
               backgroundColor: Colors.white24,
+
+              actions: [
+                IconButton(
+                  tooltip: 'Sign out',
+                  onPressed: () {
+                    context.read<AuthProvider>().signOutUser();
+                  },
+                  icon: Icon( Icons.login,),
+                ),
+              ],
             ),
           ),
         ),

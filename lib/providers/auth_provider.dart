@@ -108,9 +108,11 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (error) {
       _error = _firebaseErrorMessage(error);
+      print("=> $_error}");
       return false;
     } catch (error) {
-      _error = error.toString();
+      _error = "Something went wrong";
+      print("=> $_error}");
       return false;
     } finally {
       _stopLoading();

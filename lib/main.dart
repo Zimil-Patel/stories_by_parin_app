@@ -7,6 +7,7 @@ import 'package:stories_by_parin/providers/person_photo_provider.dart';
 import 'package:stories_by_parin/providers/photo_provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/providers/selfie_search_provider.dart';
+import 'package:stories_by_parin/screens/auth%20screen/auth_state.dart';
 import 'package:stories_by_parin/screens/auth%20screen/login_screen.dart';
 import 'package:stories_by_parin/screens/project%20screen/project_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -44,7 +45,7 @@ class StoriesBYP extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Stories BYP',
         theme: ThemeData(useMaterial3: true),
-        home: const LoginScreen(),
+        home: const AuthGate(),
       ),
     );
   }

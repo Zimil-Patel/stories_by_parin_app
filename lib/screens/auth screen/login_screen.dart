@@ -174,15 +174,15 @@ class _LoginScreenState extends State<LoginScreen> {
         
                       const SizedBox(height: 12),
         
-                      SocialAuthButton(
-                        text: 'Continue with Apple',
-                        icon: Icons.apple,
-                        isLoading: provider.isLoading,
-                        onPressed: () {
-                          // Apple Sign-In will be connected
-                          // after its Firebase configuration.
-                        },
-                      ),
+                      // SocialAuthButton(
+                      //   text: 'Continue with Apple',
+                      //   icon: Icons.apple,
+                      //   isLoading: provider.isLoading,
+                      //   onPressed: () {
+                      //     // Apple Sign-In will be connected
+                      //     // after its Firebase configuration.
+                      //   },
+                      // ),
         
                       const SizedBox(height: 28),
         
