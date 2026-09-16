@@ -49,6 +49,8 @@ class _SignupScreenState extends State<SignupScreen> {
     final success = await provider.signUpWithEmail(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
     );
 
     if (!mounted) {

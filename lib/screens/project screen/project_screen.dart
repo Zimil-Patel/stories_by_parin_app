@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
+import 'package:stories_by_parin/services/api_service.dart';
 import 'package:stories_by_parin/utils/images.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 
@@ -49,6 +50,21 @@ class _ProjectScreenState extends State<ProjectScreen> {
                     context.read<AuthProvider>().signOutUser();
                   },
                   icon: Icon( Icons.login,),
+                ),
+
+                // Todo: Remove this
+                IconButton(
+                  tooltip: 'Test',
+                  onPressed: () async {
+                    final user = context.read<AuthProvider>().user;
+
+                    if (user != null){
+                      final userData = await ApiService.apiService.getCurrentUser();
+
+                      print('LOCAL USER RESPONSE: $userData');
+                    }
+                  },
+                  icon: Icon( Icons.token,),
                 ),
               ],
             ),

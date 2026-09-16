@@ -4,6 +4,7 @@ import 'package:stories_by_parin/config/app_config.dart';
 import 'package:stories_by_parin/models/event_model.dart';
 import 'package:stories_by_parin/models/person_model.dart';
 import 'package:stories_by_parin/models/photo_model.dart';
+import 'package:stories_by_parin/services/auth_service.dart';
 
 import '../models/project_model.dart';
 import 'package:http/http.dart' as http;
@@ -12,6 +13,33 @@ class ApiService {
   ApiService._();
 
   static final ApiService apiService = ApiService._();
+
+  /// Test authentication
+  Future<Map<String, dynamic>> getCurrentUser() async {
+    final token = await AuthService.authService.getIdToken();
+
+    if(token == null){
+      throw Exception('User is not logged in.');
+    }
+
+    final response = await http.get(
+      Uri.parse("${AppConfig.baseUrl}/auth/me"),
+      headers: {
+        'Authorization': 'Bearer $token',
+      }
+    );
+
+    final responseData = jsonDecode(response.body) as Map<String,dynamic>;
+
+    if(response.statusCode != 200){
+      throw Exception(
+        responseData['detail'] ?? "Failed to get current user"
+      );
+    }
+
+    return responseData;
+
+  }
 
   /// Fetch list of all projects
   Future<List<Project>> getAllProjects() async {

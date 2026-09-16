@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:stories_by_parin/models/user_model.dart';
+import 'package:stories_by_parin/services/api_service.dart';
 import 'package:stories_by_parin/services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -12,6 +14,10 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
 
   StreamSubscription<User?>? _authSubscription;
+
+  UserModel? _localUser;
+
+  UserModel? get localUser => _localUser;
 
   bool _isInitializing= true;
 
@@ -35,23 +41,65 @@ class AuthProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  Future<void> _loadLocalUser() async {
+    // Ask FastAPI for the local user associated
+    // with the currently authenticated Firebase account.
+    final response =
+    await ApiService.apiService.getCurrentUser();
+
+    // Extract the local user from the API response.
+    final userJson =
+    response['user'] as Map<String, dynamic>;
+
+    // Convert the API JSON into our UserModel.
+    _localUser = UserModel.fromJson(userJson);
+
+    print('Local user loaded successfully');
+    print('Local user ID: ${_localUser?.id}');
+    print('Local user name: ${_localUser?.fullName}');
+  }
+
   /// listen to auth changes
   void _listenToAuthState() {
-    _authSubscription = _authService.authStateChanges.listen((user) {
+    _authSubscription = _authService.authStateChanges.listen((user) async {
       _user = user;
-      _isInitializing = false;
 
+
+      if(user == null){
+        _localUser = null;
+        _isInitializing = false;
+        notifyListeners();
+        return;
+      }
+
+      try{
+        await _loadLocalUser();
+      } catch (error) {
+        _localUser = null;
+
+        print('Failed to load locl user during auth initialization');
+        print('Error: $error');
+      }
+
+      _isInitializing = false;
       notifyListeners();
     });
   }
 
   /// Sign up user / create new user with email and password
-  Future<bool> signUpWithEmail({required String email, required String password}) async {
+  Future<bool> signUpWithEmail({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+  }) async {
     _startLoading();
     try {
       final credential = await _authService.signUpWithEmail(
         email: email,
         password: password,
+        firstName: firstName,
+        lastName: lastName,
       );
 
       _user = credential.user;
@@ -74,14 +122,16 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+
     _startLoading();
     try {
       final credential = await _authService.signInWithEmail(
         email: email,
-        password: password,
+        password: password
       );
 
       _user = credential.user;
+
       _error = null;
 
       return true;
