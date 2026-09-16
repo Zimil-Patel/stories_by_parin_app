@@ -33,6 +33,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
       context.read<PersonPhotoProvider>().fetchPhotosOfFaces(
         widget.projectId,
         widget.faceId,
+        context
       );
     });
   }

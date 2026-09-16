@@ -4,6 +4,8 @@ import 'package:photo_zoom/photo_zoom.dart';
 
 import '../../config/app_config.dart';
 import '../../models/photo_model.dart';
+import '../../providers/photo_provider.dart';
+import '../../widgets/favourite_button.dart';
 
 class PhotoViewerScreen extends StatefulWidget {
   final List<Photo> photos;
@@ -81,6 +83,8 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentPhotoId = widget.photos[_currentIndex].id;
+
     return Scaffold(
       backgroundColor: Colors.black,
 
@@ -188,9 +192,17 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             ),
           ),
 
-          // -------------------------------------------------
+
+          // FAVOURITE BUTTON
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            right: 58,
+            child: FavouriteButton(
+              photoId: currentPhotoId
+            ),
+          ),
+
           // PHOTO COUNTER
-          // -------------------------------------------------
           Positioned(
             top: MediaQuery.of(context).padding.top + 12,
             right: 16,

@@ -15,6 +15,7 @@ class SelfieResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: ClipRect(
@@ -34,10 +35,9 @@ class SelfieResultScreen extends StatelessWidget {
             ? const Center(child: Text('No photos found.'))
             : GridView.builder(
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + kToolbarHeight - 48,
+                  top: MediaQuery.of(context).padding.top + kToolbarHeight + 10,
                   // Status bar + AppBar height + margin
                   left: 8,
-
                   right: 8,
                   bottom: 16,
                 ),

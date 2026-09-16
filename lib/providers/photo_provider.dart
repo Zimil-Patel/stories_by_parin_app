@@ -66,15 +66,44 @@ class PhotoProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> toggleFavourite(int photoId) async {
+    final photoIndex = _photos.indexWhere((photo) => photo.id == photoId);
+
+    if(photoIndex == -1){
+      return false;
+    }
+
+    final currentPhoto = _photos[photoIndex];
+
+    final newFavouriteStatus = !currentPhoto.isFavourite;
+
+    _photos[photoIndex] = currentPhoto.copyWith(isFavourite: newFavouriteStatus);
+
+    notifyListeners();
+
+    try{
+
+      await _apiService.setPhotoFavourite(photoId: photoId, isFavourite: newFavouriteStatus);
+      return true;
+
+    } catch (error) {
+      _photos[photoIndex] = currentPhoto;
+      notifyListeners();
+      debugPrint(
+        '=> Failed to update favourite: $error',
+      );
+
+      return false;
+    }
+  }
 
   void toggleSortOrder(){
     _newestFirst = !_newestFirst;
-    
+
     _photos = sortPhotos(_photos);
 
     notifyListeners();
   }
-
 
   List<Photo> sortPhotos(List<Photo> photos) {
     final sortedPhotos = [...photos];
@@ -90,5 +119,32 @@ class PhotoProvider extends ChangeNotifier {
     },);
 
     return sortedPhotos;
+  }
+
+  /// Merge photos loaded by another provider into this provider.
+  ///
+  /// This is useful for screens such as Person Photos or Face Search,
+  /// where the photos come from a different API/provider but we still
+  /// want FavouriteButton to use the central PhotoProvider state.
+  void mergePhotos(List<Photo> newPhotos) {
+    for (final newPhoto in newPhotos) {
+      final existingIndex = _photos.indexWhere(
+            (photo) => photo.id == newPhoto.id,
+      );
+
+      if (existingIndex == -1) {
+        // Photo is not currently known by PhotoProvider,
+        // so add it.
+        _photos.add(newPhoto);
+      } else {
+        // Photo already exists.
+        //
+        // Replace it with the latest version returned by the API.
+        // This keeps isFavourite up to date.
+        _photos[existingIndex] = newPhoto;
+      }
+    }
+
+    notifyListeners();
   }
 }

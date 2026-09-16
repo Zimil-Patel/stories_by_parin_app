@@ -138,4 +138,19 @@ class ApiService {
     )
         .toList();
   }
+
+  /// Set photo favourite status
+  Future<void> setPhotoFavourite({
+    required int photoId,
+    required bool isFavourite,
+}) async {
+
+    final response = await  http.put(Uri.parse("${AppConfig.baseUrl}/photos/$photoId/favourite?is_favourite=$isFavourite"));
+
+    if(response.statusCode != 200){
+      throw Exception(
+        'Failed to update photo favourite staus'
+      );
+    }
+  }
 }

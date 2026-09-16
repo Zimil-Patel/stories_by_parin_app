@@ -3,9 +3,9 @@ class Photo {
   final String filename;
   final String status;
   final String createdAt;
-
   final int height;
   final int width;
+  final bool isFavourite;
 
   Photo({
     required this.id,
@@ -14,14 +14,34 @@ class Photo {
     required this.createdAt,
     required this.height,
     required this.width,
+    required this.isFavourite,
   });
 
-  factory Photo.fromJson(Map<String, dynamic> json) => Photo(
-    id: json['id'],
-    filename: json['filename'],
-    status: json['status'],
-    createdAt: json['created_at'],
-    height: json['height'],
-    width: json['width'],
-  );
+  factory Photo.fromJson(Map<String, dynamic> json) {
+    return Photo(
+      id: json['id'],
+      filename: json['filename'],
+      status: json['status'],
+      createdAt: json['created_at'],
+      height: json['height'],
+      width: json['width'],
+      isFavourite:
+      json['is_favourite'] == true ||
+          json['is_favourite'] == 1,
+    );
+  }
+
+  Photo copyWith({
+    bool? isFavourite,
+  }) {
+    return Photo(
+      id: id,
+      filename: filename,
+      status: status,
+      createdAt: createdAt,
+      height: height,
+      width: width,
+      isFavourite: isFavourite ?? this.isFavourite,
+    );
+  }
 }

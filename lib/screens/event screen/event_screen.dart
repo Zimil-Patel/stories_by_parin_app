@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/providers/event_provider.dart';
 import 'package:stories_by_parin/providers/people_provider.dart';
+import 'package:stories_by_parin/providers/photo_provider.dart';
 import 'package:stories_by_parin/providers/selfie_search_provider.dart';
 
 import 'package:stories_by_parin/screens/event%20screen/components/person_card.dart';
@@ -67,275 +68,281 @@ class _EventScreenState extends State<EventScreen> {
       ),
 
       body: AppBackground(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Flexible(
-              child: Consumer<EventProvider>(
-                builder: (context, provider, child) {
-                  // Show loading state.
-                  if (provider.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  // Show error state.
-                  if (provider.error != null) {
-                    return Center(
-                      child: Text(
-                        provider.error!,
-                      ),
-                    );
-                  }
-
-                  // Show empty state.
-                  if (provider.events.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No events found',
-                      ),
-                    );
-                  }
-
-                  final events = provider.events;
-
-                  return RefreshIndicator(
-                    onRefresh: () {
-                      return context.read<EventProvider>().fetchEvents(
-                        widget.project.id,
-                      );
-                    },
-                    child: ListView.separated(
-
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.of(context).padding.top + kToolbarHeight - 48, // Status bar + AppBar height + margin
-                        left: 16,
-                        right: 16,
-                        bottom: 16,
-                      ),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: events.length,
-
-
-                      separatorBuilder: (
-                          context,
-                          index,
-                          ) {
-                        return const SizedBox(height: 8);
-                      },
-
-                      itemBuilder: (
-                          context,
-                          index,
-                          ) {
-                        final event = events[index];
-
-                        return _EventCard(
-                          eventName: event.name,
-                          eventId: event.id,
-
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    PhotoScreen(
-                                      event: event,
-                                    ),
-                              ),
-                            );
-                          },
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: Consumer<EventProvider>(
+                    builder: (context, provider, child) {
+                      // Show loading state.
+                      if (provider.isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
                         );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
+                      }
 
-            // -------------------------------------------------
-            // PEOPLE SECTION
-            // -------------------------------------------------
+                      // Show error state.
+                      if (provider.error != null) {
+                        return Center(
+                          child: Text(
+                            provider.error!,
+                          ),
+                        );
+                      }
 
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                18,
-                16,
-                10,
-              ),
-              child: Text(
-                'People',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+                      // Show empty state.
+                      if (provider.events.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No events found',
+                          ),
+                        );
+                      }
 
-            SizedBox(
-              height: 190,
-              child: Consumer<PeopleProvider>(
-                builder: (context, provider, child) {
-                  // Show loading state.
-                  if (provider.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
+                      final events = provider.events;
 
-                  // Show error state.
-                  if (provider.error != null) {
-                    return Center(
-                      child: Text(
-                        provider.error!,
-                      ),
-                    );
-                  }
+                      return RefreshIndicator(
+                        onRefresh: () {
+                          return context.read<EventProvider>().fetchEvents(
+                            widget.project.id,
+                          );
+                        },
+                        child: ListView.separated(
 
-                  // Show empty state.
-                  if (provider.people.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No people found',
-                      ),
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      // -------------------------------------------------
-                      // FIND ME
-                      // -------------------------------------------------
-
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          left: 16,
-                        ),
-                        child: FindMeCard(
-                          onTap: () async {
-                            // Open selfie screen.
-                            final selfie =
-                            await Navigator.push<File>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                const SelfieSearchScreen(),
-                              ),
-                            );
-
-                            if (selfie == null ||
-                                !context.mounted) {
-                              return;
-                            }
-
-                            final selfieProvider =
-                            context.read<
-                                SelfieSearchProvider>();
-
-                            // Search the selfie against
-                            // the project's face clusters.
-                            final success =
-                            await selfieProvider.searchSelfie(
-                              projectId:
-                              widget.project.id,
-                              selfie: selfie,
-                            );
-
-                            if (!context.mounted) {
-                              return;
-                            }
-
-                            if (success) {
-                              final result =
-                                  selfieProvider.result;
-
-                              if (result == null) {
-                                return;
-                              }
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      SelfieResultScreen(
-                                        photos: result.photos,
-                                      ),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    selfieProvider.error ??
-                                        'Unable to find your photos.',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-
-                      // -------------------------------------------------
-                      // PEOPLE LIST
-                      // -------------------------------------------------
-
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.only(
+                          padding: EdgeInsets.only(
+                            top: MediaQuery.of(context).padding.top + kToolbarHeight - 48, // Status bar + AppBar height + margin
                             left: 16,
                             right: 16,
+                            bottom: 16,
                           ),
-                          scrollDirection: Axis.horizontal,
-                          physics:
-                          const BouncingScrollPhysics(),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: events.length,
 
-                          itemCount: provider.people.length,
+
+                          separatorBuilder: (
+                              context,
+                              index,
+                              ) {
+                            return const SizedBox(height: 8);
+                          },
 
                           itemBuilder: (
                               context,
                               index,
                               ) {
-                            final person =
-                            provider.people[index];
+                            final event = events[index];
 
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                right: 12,
-                              ),
-                              child: PersonCard(
-                                person: person,
+                            return _EventCard(
+                              eventName: event.name,
+                              eventId: event.id,
 
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          PersonPhotoScreen(
-                                            projectId:
-                                            widget.project.id,
-                                            faceId:
-                                            person.faceId,
-                                          ),
-                                    ),
-                                  );
-                                },
-                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        PhotoScreen(
+                                          event: event,
+                                        ),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+                      );
+                    },
+                  ),
+                ),
 
-            const SizedBox(height: 16),
+                // PEOPLE SECTION
+
+
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    18,
+                    16,
+                    10,
+                  ),
+                  child: Text(
+                    'People',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                SizedBox(
+                  height: 190,
+                  child: Consumer<PeopleProvider>(
+                    builder: (context, provider, child) {
+                      // Show loading state.
+                      if (provider.isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      // Show error state.
+                      if (provider.error != null) {
+                        return Center(
+                          child: Text(
+                            provider.error!,
+                          ),
+                        );
+                      }
+
+                      // Show empty state.
+                      if (provider.people.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No people found',
+                          ),
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          // -------------------------------------------------
+                          // FIND ME
+                          // -------------------------------------------------
+
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                            ),
+                            child: FindMeCard(
+                              onTap: () async {
+                                // Open selfie screen.
+                                final selfie =
+                                await Navigator.push<File>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                    const SelfieSearchScreen(),
+                                  ),
+                                );
+
+                                if (selfie == null ||
+                                    !context.mounted) {
+                                  return;
+                                }
+
+                                final selfieProvider =
+                                context.read<
+                                    SelfieSearchProvider>();
+
+                                // Search the selfie against
+                                // the project's face clusters.
+                                final success =
+                                await selfieProvider.searchSelfie(
+                                  projectId:
+                                  widget.project.id,
+                                  selfie: selfie,
+                                );
+
+                                if (!context.mounted) {
+                                  return;
+                                }
+
+                                if (success) {
+                                  final result =
+                                      selfieProvider.result;
+
+                                  if (result == null) {
+                                    return;
+                                  }
+
+                                  context.read<PhotoProvider>().mergePhotos(result.photos);
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          SelfieResultScreen(
+                                            photos: result.photos,
+                                          ),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(
+                                    context,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        selfieProvider.error ??
+                                            'Unable to find your photos.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+
+                          // -------------------------------------------------
+                          // PEOPLE LIST
+                          // -------------------------------------------------
+
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                right: 16,
+                              ),
+                              scrollDirection: Axis.horizontal,
+                              physics:
+                              const BouncingScrollPhysics(),
+
+                              itemCount: provider.people.length,
+
+                              itemBuilder: (
+                                  context,
+                                  index,
+                                  ) {
+                                final person =
+                                provider.people[index];
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: 12,
+                                  ),
+                                  child: PersonCard(
+                                    person: person,
+
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              PersonPhotoScreen(
+                                                projectId:
+                                                widget.project.id,
+                                                faceId:
+                                                person.faceId,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+              ],
+            ),
 
             // -------------------------------------------------
             // SELFIE SEARCH LOADING OVERLAY

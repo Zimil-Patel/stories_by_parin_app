@@ -6,7 +6,6 @@ import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/project_provider.dart';
 import 'package:stories_by_parin/screens/event%20screen/event_screen.dart';
 import 'package:stories_by_parin/services/api_service.dart';
-import 'package:stories_by_parin/utils/images.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 
 import 'components/project_card.dart';
@@ -42,31 +41,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
               scrolledUnderElevation: 0,
               title: const Text('Projects'),
               backgroundColor: Colors.white24,
-
-              actions: [
-                IconButton(
-                  tooltip: 'Sign out',
-                  onPressed: () {
-                    context.read<AuthProvider>().signOutUser();
-                  },
-                  icon: Icon( Icons.login,),
-                ),
-
-                // Todo: Remove this
-                IconButton(
-                  tooltip: 'Test',
-                  onPressed: () async {
-                    final user = context.read<AuthProvider>().user;
-
-                    if (user != null){
-                      final userData = await ApiService.apiService.getCurrentUser();
-
-                      print('LOCAL USER RESPONSE: $userData');
-                    }
-                  },
-                  icon: Icon( Icons.token,),
-                ),
-              ],
             ),
           ),
         ),
