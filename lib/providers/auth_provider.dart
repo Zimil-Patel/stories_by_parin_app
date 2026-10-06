@@ -162,7 +162,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (error) {
       _error = "Something went wrong";
-      print("=> $_error}");
+      print("=> $error}");
       return false;
     } finally {
       _stopLoading();

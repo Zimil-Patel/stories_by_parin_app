@@ -61,12 +61,31 @@ class AuthService {
 
   /// User sign in with google
   Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
+    // Initialize Google Sign-In before starting authentication.
+    //
+    // This is the Web OAuth client ID from Firebase.
+    await _googleSignIn.initialize(
+      serverClientId:
+      '173883973257-a8t81j0em7v83msgnjdr71ihd4nph15h.apps.googleusercontent.com',
+    );
 
-    return await _firebaseAuth.signInWithCredential(credential);
+    // Open the Google account selection screen.
+    final GoogleSignInAccount googleUser =
+    await _googleSignIn.authenticate();
 
+    // Get the Google authentication information.
+    final GoogleSignInAuthentication googleAuth =
+        googleUser.authentication;
+
+    // Create a Firebase credential using the Google ID token.
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+
+    // Sign in to Firebase using the Google credential.
+    return await _firebaseAuth.signInWithCredential(
+      credential,
+    );
   }
 
   /// Get current user
