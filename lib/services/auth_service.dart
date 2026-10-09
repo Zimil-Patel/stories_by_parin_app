@@ -29,6 +29,7 @@ class AuthService {
 
     print('DEBUG: Firebase UID: ${user.uid}');
     print('DEBUG: ID token received: ${token != null}');
+    // print('DEBUG: ID token: $token');
 
     return token;
   }

@@ -77,7 +77,7 @@ class AuthProvider extends ChangeNotifier {
       } catch (error) {
         _localUser = null;
 
-        print('Failed to load locl user during auth initialization');
+        print('Failed to load local user during auth initialization');
         print('Error: $error');
       }
 
