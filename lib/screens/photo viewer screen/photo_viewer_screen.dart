@@ -1,28 +1,40 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_zoom/photo_zoom.dart';
+import 'package:stories_by_parin/models/project_model.dart';
 
 import '../../config/app_config.dart';
 import '../../models/photo_model.dart';
-import '../../providers/photo_provider.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/favourite_button.dart';
 
 class PhotoViewerScreen extends StatefulWidget {
   final List<Photo> photos;
+  final Project project;
   final int initialIndex;
 
   const PhotoViewerScreen({
     super.key,
     required this.photos,
-    required this.initialIndex,
+    required this.initialIndex, required this.project,
   });
 
   @override
-  State<PhotoViewerScreen> createState() => _PhotoViewerScreenState();
+  State<PhotoViewerScreen> createState() =>
+      _PhotoViewerScreenState();
 }
 
 class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   late int _currentIndex;
+
+  // Keep one page controller for the lifetime of this screen.
+  late final PageController _pageController;
+
+  // Store the token so image widgets and preloading use the same
+  // authenticated request headers while the viewer is open.
+  String? _idToken;
+  bool _isLoadingToken = true;
+  String? _tokenError;
 
   @override
   void initState() {
@@ -30,14 +42,68 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
     _currentIndex = widget.initialIndex;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _preloadNearbyPhotos(widget.initialIndex);
-    });
+    _pageController = PageController(
+      initialPage: widget.initialIndex,
+    );
+
+    // Authenticate before starting image requests.
+    _loadAuthorizationToken();
   }
 
-  // Preload the original images immediately before and after
-  // the currently visible photo.
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  /// Obtain the current Firebase token before loading images.
+  Future<void> _loadAuthorizationToken() async {
+    try {
+      final token = await AuthService.authService.getIdToken();
+
+      if (!mounted) return;
+
+      if (token == null || token.isEmpty) {
+        setState(() {
+          _isLoadingToken = false;
+          _tokenError =
+          'Please sign in again to view these photos.';
+        });
+        return;
+      }
+
+      setState(() {
+        _idToken = token;
+        _isLoadingToken = false;
+      });
+
+      // Preload images after the authenticated UI is ready.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _preloadNearbyPhotos(_currentIndex);
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      debugPrint('Failed to obtain image authorization: $error');
+
+      setState(() {
+        _isLoadingToken = false;
+        _tokenError = 'Unable to authenticate image requests.';
+      });
+    }
+  }
+
+  /// Build the Authorization header used by protected image endpoints.
+  Map<String, String> get _imageHeaders => {
+    'Authorization': 'Bearer $_idToken',
+  };
+
+  /// Preload thumbnails and originals near the current photo.
   void _preloadNearbyPhotos(int index) {
+    if (_idToken == null) return;
+
     final indexesToPreload = <int>[
       index,
       index - 1,
@@ -58,10 +124,12 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
       final originalUrl =
           '${AppConfig.baseUrl}/photos/${photo.id}/image';
 
-      // Preload the small thumbnail.
-      // This gives us something lightweight to show immediately.
+      // Preload the authenticated thumbnail.
       precacheImage(
-        CachedNetworkImageProvider(thumbnailUrl),
+        CachedNetworkImageProvider(
+          thumbnailUrl,
+          headers: _imageHeaders,
+        ),
         context,
       ).catchError((error) {
         debugPrint(
@@ -69,9 +137,12 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         );
       });
 
-      // Preload the full-resolution original.
+      // Preload the authenticated full-resolution original.
       precacheImage(
-        CachedNetworkImageProvider(originalUrl),
+        CachedNetworkImageProvider(
+          originalUrl,
+          headers: _imageHeaders,
+        ),
         context,
       ).catchError((error) {
         debugPrint(
@@ -83,122 +154,156 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Wait until we have an authorization token.
+    if (_isLoadingToken) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    // Do not request protected images without authentication.
+    if (_idToken == null) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _tokenError ?? 'Unable to load photos.',
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     final currentPhotoId = widget.photos[_currentIndex].id;
 
     return Scaffold(
       backgroundColor: Colors.black,
-
       body: Stack(
         children: [
           PhotoViewGallery.builder(
             itemCount: widget.photos.length,
+            pageController: _pageController,
 
             builder: (context, index) {
               final photo = widget.photos[index];
 
+              final thumbnailUrl =
+                  '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail'
+                  '?v=${photo.createdAt}';
+
+              final originalUrl =
+                  '${AppConfig.baseUrl}/photos/${photo.id}/image'
+                  '?v=${photo.createdAt}';
+
               return PhotoViewGalleryPageOptions.customChild(
-                // Keep the custom child at the same aspect ratio
-                // as the original photo.
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // -------------------------------------------------
-                    // CACHED THUMBNAIL
-                    // -------------------------------------------------
+                    // --------------------------------------------
+                    // AUTHENTICATED CACHED THUMBNAIL
+                    // --------------------------------------------
                     CachedNetworkImage(
-                      imageUrl:
-                      '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail?v=${photo.createdAt}',
+                      imageUrl: thumbnailUrl,
+                      httpHeaders: _imageHeaders,
                       fit: BoxFit.contain,
                     ),
 
-                    // -------------------------------------------------
-                    // ORIGINAL PHOTO
-                    // -------------------------------------------------
+                    // --------------------------------------------
+                    // AUTHENTICATED ORIGINAL PHOTO
+                    // --------------------------------------------
                     Image(
                       image: CachedNetworkImageProvider(
-                        '${AppConfig.baseUrl}/photos/${photo.id}/image?v=${photo.createdAt}',
+                        originalUrl,
+                        headers: _imageHeaders,
                       ),
                       fit: BoxFit.contain,
 
-                      // Keep the thumbnail visible while the original
-                      // high-resolution image is being decoded.
+                      // Keep the thumbnail visible while the
+                      // original image loads.
                       loadingBuilder: (
                           context,
                           child,
                           loadingProgress,
                           ) {
                         if (loadingProgress == null) {
-                          // Original image is fully loaded.
                           return child;
                         }
 
-                        // Return nothing while loading so the cached
-                        // thumbnail underneath remains visible.
+                        return const SizedBox.shrink();
+                      },
+
+                      // Keep the thumbnail visible if the original
+                      // image cannot be displayed.
+                      errorBuilder: (
+                          context,
+                          error,
+                          stackTrace,
+                          ) {
+                        debugPrint(
+                          'Original image failed for photo '
+                              '${photo.id}: $error',
+                        );
+
                         return const SizedBox.shrink();
                       },
                     ),
                   ],
                 ),
 
-                // Tell photo_zoom the actual dimensions
-                // of the original photo.
+                // Use the actual original photo dimensions.
                 childSize: Size(
                   photo.width.toDouble(),
                   photo.height.toDouble(),
                 ),
 
-                // Use the normal contained scale.
-                // We previously used * 2 only as a diagnostic test.
                 minScale: PhotoViewComputedScale.contained,
-
-                // Allow the user to zoom further into the photo.
-                maxScale:
-                PhotoViewComputedScale.covered * 3,
-
+                maxScale: PhotoViewComputedScale.covered * 3,
                 basePosition: Alignment.center,
               );
             },
-
-            // Start from the photo selected in the grid.
-            pageController: PageController(
-              initialPage: widget.initialIndex,
-            ),
 
             backgroundDecoration: const BoxDecoration(
               color: Colors.black,
             ),
 
+            // Update the selected photo and preload its neighbors.
             onPageChanged: (index) {
               setState(() {
                 _currentIndex = index;
               });
 
-              // Preload the new photo's neighbors.
               _preloadNearbyPhotos(index);
             },
           ),
 
-          // -------------------------------------------------
           // CLOSE BUTTON
-          // -------------------------------------------------
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             left: 12,
             child: _ViewerButton(
               icon: Icons.close,
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
             ),
           ),
-
 
           // FAVOURITE BUTTON
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             right: 58,
             child: FavouriteButton(
-              photoId: currentPhotoId
+              role: widget.project.role ?? GalleryRole.viewer,
+              photoId: currentPhotoId,
             ),
           ),
 

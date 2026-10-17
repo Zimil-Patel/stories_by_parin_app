@@ -5,12 +5,14 @@ import 'package:stories_by_parin/models/photo_model.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
+import '../../models/project_model.dart';
 import '../../utils/images.dart';
 
 class SelfieResultScreen extends StatelessWidget {
   final List<Photo> photos;
+  final Project project;
 
-  const SelfieResultScreen({super.key, required this.photos});
+  const SelfieResultScreen({super.key, required this.photos, required this.project});
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class SelfieResultScreen extends StatelessWidget {
                 itemCount: photos.length,
                 itemBuilder: (context, index) {
                   return PhotoGridItem(
+                    project: project,
                     photo: photos[index],
                     index: index,
                     photos: photos,

@@ -1,4 +1,5 @@
 import 'dart:developer' as console;
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:stories_by_parin/models/project_model.dart';
@@ -24,7 +25,7 @@ class ProjectProvider extends ChangeNotifier {
     notifyListeners();
 
     try{
-      _projects = await _apiService.getAllProjects();
+      _projects = await _apiService.getAllGalleries();
     } catch(error) {
       _error = error.toString();
 

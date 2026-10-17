@@ -144,6 +144,7 @@ class _EventScreenState extends State<EventScreen> {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         PhotoScreen(
+                                          project: widget.project,
                                           event: event,
                                         ),
                                   ),
@@ -264,6 +265,7 @@ class _EventScreenState extends State<EventScreen> {
                                     MaterialPageRoute(
                                       builder: (_) =>
                                           SelfieResultScreen(
+                                            project: widget.project,
                                             photos: result.photos,
                                           ),
                                     ),
@@ -320,8 +322,7 @@ class _EventScreenState extends State<EventScreen> {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               PersonPhotoScreen(
-                                                projectId:
-                                                widget.project.id,
+                                                project: widget.project,
                                                 faceId:
                                                 person.faceId,
                                               ),

@@ -9,14 +9,15 @@ import 'package:stories_by_parin/providers/photo_provider.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
-import '../../utils/images.dart';
+import '../../models/project_model.dart';
 
 class PhotoScreen extends StatefulWidget {
   final Event event;
+  final Project project;
 
   const PhotoScreen({
     super.key,
-    required this.event,
+    required this.event, required this.project,
   });
 
   @override
@@ -178,6 +179,7 @@ class _PhotoScreenState extends State<PhotoScreen> {
         
                       return PhotoGridItem(
                         key: ValueKey(photo.id),
+                        project: widget.project,
                         photo: photo,
                         index: index,
                         photos: photos,

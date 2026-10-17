@@ -9,7 +9,11 @@ class AuthService {
 
   AuthService._();
 
-  Stream<User?> get authStateChanges {
+  Stream<User?> get userChanges {
+    return _firebaseAuth.userChanges();
+  }
+
+  Stream<User?> get authChanges {
     return _firebaseAuth.authStateChanges();
   }
 
@@ -25,11 +29,11 @@ class AuthService {
       return null;
     }
 
-    final token = await user.getIdToken(true);
+    final token = await user.getIdToken();
 
     print('DEBUG: Firebase UID: ${user.uid}');
     print('DEBUG: ID token received: ${token != null}');
-    // print('DEBUG: ID token: $token');
+    print('DEBUG: ID token: $token');
 
     return token;
   }
@@ -48,6 +52,9 @@ class AuthService {
     await credential.user?.updateDisplayName(fullName);
 
     await credential.user?.reload();
+
+    final updatedUser = _firebaseAuth.currentUser;
+    await updatedUser?.getIdToken();
 
     return credential;
   }

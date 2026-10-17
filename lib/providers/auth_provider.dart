@@ -12,6 +12,7 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
+  bool _isSigningUp = false;
 
   StreamSubscription<User?>? _authSubscription;
 
@@ -61,13 +62,18 @@ class AuthProvider extends ChangeNotifier {
 
   /// listen to auth changes
   void _listenToAuthState() {
-    _authSubscription = _authService.authStateChanges.listen((user) async {
+    _authSubscription = _authService.authChanges.listen((user) async {
       _user = user;
 
 
       if(user == null){
         _localUser = null;
         _isInitializing = false;
+        notifyListeners();
+        return;
+      }
+
+      if (_isSigningUp) {
         notifyListeners();
         return;
       }
@@ -95,6 +101,9 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _startLoading();
     try {
+
+      _isSigningUp = true;
+
       final credential = await _authService.signUpWithEmail(
         email: email,
         password: password,
@@ -102,8 +111,17 @@ class AuthProvider extends ChangeNotifier {
         lastName: lastName,
       );
 
-      _user = credential.user;
+      _user = _authService.currentUser ?? credential.user;
       _error = null;
+
+      try {
+        await _loadLocalUser();
+      } catch (syncError) {
+        // Firebase signup succeeded even if local synchronization failed.
+        debugPrint(
+          'Signup succeeded, but local user sync failed: $syncError',
+        );
+      }
 
       return true;
     } on FirebaseAuthException catch (error) {
@@ -113,6 +131,7 @@ class AuthProvider extends ChangeNotifier {
       _error = error.toString();
       return false;
     } finally {
+      _isSigningUp = false;
       _stopLoading();
     }
   }

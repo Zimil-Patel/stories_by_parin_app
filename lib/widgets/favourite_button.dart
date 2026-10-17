@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/providers/photo_provider.dart';
 
 class FavouriteButton extends StatelessWidget {
   final int photoId;
+  final GalleryRole role;
 
   const FavouriteButton({
     super.key,
-    required this.photoId,
+    required this.photoId, required this.role,
   });
 
   Future<void> _toggleFavourite(
@@ -38,6 +40,9 @@ class FavouriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    if(role != GalleryRole.owner) return SizedBox.shrink();
+
     // Listen to PhotoProvider so this button automatically
     // rebuilds whenever the favourite state changes.
     final photoProvider = context.watch<PhotoProvider>();

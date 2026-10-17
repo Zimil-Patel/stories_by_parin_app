@@ -7,16 +7,16 @@ import 'package:stories_by_parin/providers/person_photo_provider.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 import 'package:stories_by_parin/widgets/photo_grid_item.dart';
 
+import '../../models/project_model.dart';
 import '../../utils/images.dart';
 
 class PersonPhotoScreen extends StatefulWidget {
-  final int projectId;
+  final Project project;
   final int faceId;
 
   const PersonPhotoScreen({
     super.key,
-    required this.projectId,
-    required this.faceId,
+    required this.faceId, required this.project,
   });
 
   @override
@@ -31,7 +31,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PersonPhotoProvider>().fetchPhotosOfFaces(
-        widget.projectId,
+        widget.project.id,
         widget.faceId,
         context
       );
@@ -127,6 +127,7 @@ class _PersonPhotoScreenState extends State<PersonPhotoScreen> {
                     final photo = photos[index];
         
                     return PhotoGridItem(
+                      project: widget.project,
                       photo: photo,
                       index: index,
                       photos: photos,

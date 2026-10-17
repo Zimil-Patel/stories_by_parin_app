@@ -1,65 +1,111 @@
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:http/http.dart' as http;
 import 'package:stories_by_parin/config/app_config.dart';
 import 'package:stories_by_parin/models/event_model.dart';
 import 'package:stories_by_parin/models/person_model.dart';
 import 'package:stories_by_parin/models/photo_model.dart';
+import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/services/auth_service.dart';
-
-import '../models/project_model.dart';
-import 'package:http/http.dart' as http;
 
 class ApiService {
   ApiService._();
 
   static final ApiService apiService = ApiService._();
 
-  /// Test authentication
-  Future<Map<String, dynamic>> getCurrentUser() async {
+  /// Build the Authorization header for authenticated API requests.
+  ///
+  /// Firebase returns a cached ID token when it is still valid
+  /// and refreshes it automatically when necessary.
+  Future<Map<String, String>> _authorizedHeaders() async {
     final token = await AuthService.authService.getIdToken();
 
-    if(token == null){
+    if (token == null || token.isEmpty) {
       throw Exception('User is not logged in.');
     }
 
+    return {
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  /// Fetch the currently authenticated user's local profile.
+  Future<Map<String, dynamic>> getCurrentUser() async {
     final response = await http.get(
-      Uri.parse("${AppConfig.baseUrl}/auth/me"),
-      headers: {
-        'Authorization': 'Bearer $token',
-      }
+      Uri.parse('${AppConfig.baseUrl}/auth/me'),
+      headers: await _authorizedHeaders(),
     );
 
-    final responseData = jsonDecode(response.body) as Map<String,dynamic>;
+    final responseData =
+    jsonDecode(response.body) as Map<String, dynamic>;
 
-    if(response.statusCode != 200){
+    if (response.statusCode != 200) {
       throw Exception(
-        responseData['detail'] ?? "Failed to get current user"
+        responseData['detail'] ?? 'Failed to get current user',
       );
     }
 
     return responseData;
-
   }
 
-  /// Fetch list of all projects
+  /// Fetch all projects.
   Future<List<Project>> getAllProjects() async {
-    final response = await http.get(Uri.parse("${AppConfig.baseUrl}/projects"));
+
+    // log("Before call");
+
+    final response = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/projects'),
+      headers: await _authorizedHeaders(),
+    );
+
+    // log("After call");
 
     if (response.statusCode != 200) {
       throw Exception('Failed to load projects');
     }
 
     final List<dynamic> data = jsonDecode(response.body);
+    // log("PROJECTS: $data");
 
     return data
-        .map((json) => Project.fromJson(json as Map<String, dynamic>))
+        .map(
+          (json) => Project.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
         .toList();
   }
 
-  /// Fetch events for specific project
+  /// Fetch all galleries
+  Future<List<Project>> getAllGalleries() async {
+
+    log("Galleries");
+
+    final response = await http.get(
+    Uri.parse('${AppConfig.baseUrl}/my-galleries'),
+      headers: await _authorizedHeaders()
+    );
+
+    if(response.statusCode != 200) {
+      throw Exception('Failed to load galleries');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final galleries = data['galleries'] as List<dynamic>;
+
+    return galleries.map((json) => Project.fromJson(json as Map<String, dynamic>)).toList();
+
+  }
+
+  /// Fetch events belonging to a project.
   Future<List<Event>> getAllEvents(int projectId) async {
     final response = await http.get(
-      Uri.parse("${AppConfig.baseUrl}/projects/$projectId/events"),
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/events',
+      ),
+      headers: await _authorizedHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -69,31 +115,52 @@ class ApiService {
     final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map((json) => Event.fromJson(json as Map<String, dynamic>))
+        .map(
+          (json) => Event.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
         .toList();
   }
 
-  /// Fetch all photos of particular events
+  /// Fetch photos belonging to an event.
+  ///
+  /// The backend checks whether the user has access to the
+  /// gallery containing this event.
   Future<List<Photo>> getAllPhotosOfEvent(int eventId) async {
     final response = await http.get(
-      Uri.parse("${AppConfig.baseUrl}/events/$eventId/photos"),
+      Uri.parse(
+        '${AppConfig.baseUrl}/events/$eventId/photos',
+      ),
+      headers: await _authorizedHeaders(),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load photos');
+      throw Exception(
+        'Failed to load photos: ${response.statusCode}',
+      );
     }
 
     final List<dynamic> data = jsonDecode(response.body);
 
     return data
-        .map((json) => Photo.fromJson(json as Map<String, dynamic>))
+        .map(
+          (json) => Photo.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
         .toList();
   }
 
-  /// Fetch all faces of project
-  Future<List<Person>> getAllFacesOfProject(int projectId) async {
+  /// Fetch all detected faces belonging to a project.
+  Future<List<Person>> getAllFacesOfProject(
+      int projectId,
+      ) async {
     final response = await http.get(
-      Uri.parse("${AppConfig.baseUrl}/projects/$projectId/faces"),
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/faces',
+      ),
+      headers: await _authorizedHeaders(),
     );
 
     if (response.statusCode != 200) {
@@ -102,33 +169,33 @@ class ApiService {
 
     final List<dynamic> data = jsonDecode(response.body);
 
-    return data.map((json) => Person.fromJson(json)).toList();
+    return data
+        .map(
+          (json) => Person.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
+        .toList();
   }
 
-  /// Get all photos for person face
-  /// Fetch all photos containing a person inside one project.
+  /// Fetch photos containing a particular person.
   Future<List<Photo>> getPhotosForPerson(
       int projectId,
       int faceId,
       ) async {
-
     final response = await http.get(
       Uri.parse(
-        "${AppConfig.baseUrl}/projects/$projectId/faces/$faceId/photos",
+        '${AppConfig.baseUrl}/projects/$projectId/faces/$faceId/photos',
       ),
+      headers: await _authorizedHeaders(),
     );
 
     if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load person photos',
-      );
+      throw Exception('Failed to load person photos');
     }
 
-    final Map<String, dynamic> data =
-    jsonDecode(response.body);
-
-    final List<dynamic> photos =
-    data['photos'] as List<dynamic>;
+    final Map<String, dynamic> data = jsonDecode(response.body);
+    final List<dynamic> photos = data['photos'] as List<dynamic>;
 
     return photos
         .map(
@@ -139,17 +206,23 @@ class ApiService {
         .toList();
   }
 
-  /// Set photo favourite status
+  /// Update the favourite status of a photo.
   Future<void> setPhotoFavourite({
     required int photoId,
     required bool isFavourite,
-}) async {
+  }) async {
+    final response = await http.put(
+      Uri.parse(
+        '${AppConfig.baseUrl}/photos/$photoId/favourite'
+            '?is_favourite=$isFavourite',
+      ),
+      headers: await _authorizedHeaders(),
+    );
 
-    final response = await  http.put(Uri.parse("${AppConfig.baseUrl}/photos/$photoId/favourite?is_favourite=$isFavourite"));
-
-    if(response.statusCode != 200){
+    if (response.statusCode != 200) {
       throw Exception(
-        'Failed to update photo favourite staus'
+        'Failed to update photo favourite status: '
+            '${response.statusCode}',
       );
     }
   }
