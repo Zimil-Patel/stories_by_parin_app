@@ -14,6 +14,7 @@ import 'package:stories_by_parin/screens/event%20screen/components/person_card.d
 import 'package:stories_by_parin/screens/person%20photos%20screen/person_photos_screen.dart';
 import 'package:stories_by_parin/screens/photo%20screen/photo_screen.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
+import 'package:stories_by_parin/widgets/gallery_members_setting_tile.dart';
 
 import '../../utils/images.dart';
 import '../selfie result screen/selfie_result_screen.dart';
@@ -62,6 +63,10 @@ class _EventScreenState extends State<EventScreen> {
               scrolledUnderElevation: 0,
               title: Text(widget.project.name),
               backgroundColor: Colors.white24,
+
+              actions: [
+                GalleryMembersAppBarAction(project: widget.project),
+              ],
             ),
           ),
         ),

@@ -1,38 +1,39 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:stories_by_parin/models/user_model.dart';
-import 'package:stories_by_parin/services/api_service.dart';
+import 'package:flutter/material.dart';
 import 'package:stories_by_parin/services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  // Firebase authentication operations.
   final AuthService _authService = AuthService.authService;
 
+  // The currently authenticated Firebase user.
   User? _user;
-  bool _isLoading = false;
-  String? _error;
-  bool _isSigningUp = false;
 
+  // Authentication operation state.
+  bool _isLoading = false;
+  bool _isInitializing = true;
+  bool _isSigningUp = false;
+  String? _error;
+
+  // Listen for Firebase authentication changes.
   StreamSubscription<User?>? _authSubscription;
 
-  UserModel? _localUser;
-
-  UserModel? get localUser => _localUser;
-
-  bool _isInitializing= true;
-
+  // Public getters for the UI and other providers.
   User? get user => _user;
 
   bool get isLoading => _isLoading;
+
+  bool get isInitializing => _isInitializing;
+
+  bool get isSigningUp => _isSigningUp;
 
   String? get error => _error;
 
   bool get isLoggedIn => _user != null;
 
-  bool get isInitializing => _isInitializing;
-
-  AuthProvider(){
+  AuthProvider() {
     _listenToAuthState();
   }
 
@@ -42,68 +43,32 @@ class AuthProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> _loadLocalUser() async {
-    // Ask FastAPI for the local user associated
-    // with the currently authenticated Firebase account.
-    final response =
-    await ApiService.apiService.getCurrentUser();
-
-    // Extract the local user from the API response.
-    final userJson =
-    response['user'] as Map<String, dynamic>;
-
-    // Convert the API JSON into our UserModel.
-    _localUser = UserModel.fromJson(userJson);
-
-    print('Local user loaded successfully');
-    print('Local user ID: ${_localUser?.id}');
-    print('Local user name: ${_localUser?.fullName}');
-  }
-
-  /// listen to auth changes
+  /// Listen to Firebase sign-in and sign-out events.
+  ///
+  /// Profile loading is handled separately by ProfileProvider.
   void _listenToAuthState() {
-    _authSubscription = _authService.authChanges.listen((user) async {
+    _authSubscription = _authService.authChanges.listen((user) {
       _user = user;
-
-
-      if(user == null){
-        _localUser = null;
-        _isInitializing = false;
-        notifyListeners();
-        return;
-      }
-
-      if (_isSigningUp) {
-        notifyListeners();
-        return;
-      }
-
-      try{
-        await _loadLocalUser();
-      } catch (error) {
-        _localUser = null;
-
-        print('Failed to load local user during auth initialization');
-        print('Error: $error');
-      }
-
       _isInitializing = false;
+
+      // Notify the UI and ProfileProvider about the auth state.
       notifyListeners();
     });
   }
 
-  /// Sign up user / create new user with email and password
+  /// Create an account using email and password.
   Future<bool> signUpWithEmail({
     required String email,
     required String password,
     required String firstName,
     required String lastName,
   }) async {
+    // Set this before notifying listeners so they see the correct state.
+    _isSigningUp = true;
     _startLoading();
+
     try {
-
-      _isSigningUp = true;
-
+      // AuthService creates the Firebase account and updates its name.
       final credential = await _authService.signUpWithEmail(
         email: email,
         password: password,
@@ -114,43 +79,36 @@ class AuthProvider extends ChangeNotifier {
       _user = _authService.currentUser ?? credential.user;
       _error = null;
 
-      try {
-        await _loadLocalUser();
-      } catch (syncError) {
-        // Firebase signup succeeded even if local synchronization failed.
-        debugPrint(
-          'Signup succeeded, but local user sync failed: $syncError',
-        );
-      }
-
+      // ProfileProvider will load the local profile after signup completes.
       return true;
     } on FirebaseAuthException catch (error) {
       _error = _firebaseErrorMessage(error);
       return false;
     } catch (error) {
       _error = error.toString();
+      debugPrint('Signup failed: $error');
       return false;
     } finally {
+      // Let ProfileProvider load only after signup/profile setup finishes.
       _isSigningUp = false;
       _stopLoading();
     }
   }
 
-  /// Sign in user by entering email and password
+  /// Sign in using email and password.
   Future<bool> signInWithEmail({
     required String email,
     required String password,
   }) async {
-
     _startLoading();
+
     try {
       final credential = await _authService.signInWithEmail(
         email: email,
-        password: password
+        password: password,
       );
 
       _user = credential.user;
-
       _error = null;
 
       return true;
@@ -159,15 +117,17 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (error) {
       _error = error.toString();
+      debugPrint('Email sign-in failed: $error');
       return false;
     } finally {
       _stopLoading();
     }
   }
 
-  /// Continue login with google option
+  /// Sign in using Google.
   Future<bool> signInWithGoogle() async {
     _startLoading();
+
     try {
       final credential = await _authService.signInWithGoogle();
 
@@ -177,41 +137,49 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (error) {
       _error = _firebaseErrorMessage(error);
-      print("=> $_error}");
+      debugPrint('Google sign-in failed: $_error');
       return false;
     } catch (error) {
-      _error = "Something went wrong";
-      print("=> $error}");
+      _error = 'Something went wrong';
+      debugPrint('Google sign-in failed: $error');
       return false;
     } finally {
       _stopLoading();
     }
   }
 
-  /// Log out user / Sign out user
+  /// Sign out of Firebase.
   Future<void> signOutUser() async {
-    await _authService.signOut();
+    try {
+      await _authService.signOut();
 
-    _user = null;
-    _error = null;
+      _user = null;
+      _error = null;
 
-    notifyListeners();
+      // ProfileProvider observes the authentication change and clears
+      // the local profile.
+      notifyListeners();
+    } catch (error) {
+      _error = 'Failed to sign out. Please try again.';
+      debugPrint('Sign-out failed: $error');
+      notifyListeners();
+    }
   }
 
+  /// Mark an authentication operation as active.
   void _startLoading() {
     _isLoading = true;
     _error = null;
-
     notifyListeners();
   }
 
+  /// Mark an authentication operation as finished.
   void _stopLoading() {
     _isLoading = false;
-
     notifyListeners();
   }
 
-  /// Convert firebase error message into suitable message
+  /// Convert Firebase errors into user-friendly messages.
   String _firebaseErrorMessage(FirebaseAuthException error) {
     switch (error.code) {
       case 'invalid-email':
@@ -237,7 +205,8 @@ class AuthProvider extends ChangeNotifier {
         return 'This account has been disabled.';
 
       default:
-        return error.message ?? 'Authentication failed. Please try again.';
+        return error.message ??
+            'Authentication failed. Please try again.';
     }
   }
 }

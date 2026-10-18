@@ -6,6 +6,7 @@ class UserModel {
   final String email;
   final bool emailVerified;
   final String? mobileNumber;
+  final String? photoUrl;
   final String createdAt;
   final String updatedAt;
 
@@ -17,6 +18,7 @@ class UserModel {
     required this.email,
     required this.emailVerified,
     required this.mobileNumber,
+    required this.photoUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -30,6 +32,7 @@ class UserModel {
       email: json['email'] as String,
       emailVerified: json['email_verified'] as bool? ?? false,
       mobileNumber: json['mobile_number'] as String?,
+      photoUrl: json['photo_url'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
     );

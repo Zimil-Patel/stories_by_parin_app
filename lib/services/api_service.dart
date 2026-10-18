@@ -9,6 +9,8 @@ import 'package:stories_by_parin/models/photo_model.dart';
 import 'package:stories_by_parin/models/project_model.dart';
 import 'package:stories_by_parin/services/auth_service.dart';
 
+import '../models/gallery_member.dart';
+
 class ApiService {
   ApiService._();
 
@@ -80,7 +82,6 @@ class ApiService {
   /// Fetch all galleries
   Future<List<Project>> getAllGalleries() async {
 
-    log("Galleries");
 
     final response = await http.get(
     Uri.parse('${AppConfig.baseUrl}/my-galleries'),
@@ -97,6 +98,39 @@ class ApiService {
 
     return galleries.map((json) => Project.fromJson(json as Map<String, dynamic>)).toList();
 
+  }
+
+  /// Fetch registered members and pending invitations for a gallery.
+  /// Only a gallery Owner should be allowed to call this endpoint.
+  Future<List<GalleryMember>> getGalleryMembers(
+      int projectId,
+      ) async {
+    final response = await http.get(
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/gallery/members',
+      ),
+      headers: await _authorizedHeaders(),
+    );
+
+    final responseData =
+    jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        responseData['detail'] ?? 'Failed to load gallery members.',
+      );
+    }
+
+    final List<dynamic> data =
+    responseData['members'] as List<dynamic>;
+
+    return data
+        .map(
+          (json) => GalleryMember.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
+        .toList();
   }
 
   /// Fetch events belonging to a project.

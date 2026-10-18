@@ -3,8 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/auth_provider.dart';
+import 'package:stories_by_parin/providers/profile_provider.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 
+import '../../widgets/profile_avatar_button.dart';
 import '../project screen/project_screen.dart';
 import 'components/dashboard_action_card.dart';
 import 'components/dashboard_headers.dart';
@@ -14,7 +16,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().localUser;
+    final profile = context.watch<ProfileProvider>().profile;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -33,13 +35,7 @@ class DashboardScreen extends StatelessWidget {
               backgroundColor: Colors.white24,
 
               actions: [
-                IconButton(
-                  tooltip: 'Sign out',
-                  onPressed: () {
-                    context.read<AuthProvider>().signOutUser();
-                  },
-                  icon: const Icon(Icons.logout),
-                ),
+                ProfileAvatarButton(),
               ],
             ),
           ),
@@ -48,7 +44,7 @@ class DashboardScreen extends StatelessWidget {
 
       body: AppBackground(
         child: SafeArea(
-          child: user == null
+          child: profile == null
               ? const Center(
             child: CircularProgressIndicator(),
           )
@@ -58,7 +54,7 @@ class DashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DashboardHeader(
-                  firstName: user.firstName,
+                  firstName: profile.firstName,
                 ),
 
                 const SizedBox(height: 30),

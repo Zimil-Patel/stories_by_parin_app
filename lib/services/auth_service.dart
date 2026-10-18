@@ -25,15 +25,10 @@ class AuthService {
     final user = _firebaseAuth.currentUser;
 
     if (user == null) {
-      print('DEBUG: No Firebase user');
       return null;
     }
 
     final token = await user.getIdToken();
-
-    print('DEBUG: Firebase UID: ${user.uid}');
-    print('DEBUG: ID token received: ${token != null}');
-    print('DEBUG: ID token: $token');
 
     return token;
   }
@@ -102,6 +97,72 @@ class AuthService {
   /// Sign out user
   Future<void> signOut () async {
     await _firebaseAuth.signOut();
+  }
+
+  /// Update the authenticated user's display name in Firebase.
+  ///
+  /// After updating the name, refresh the ID token so the backend
+  /// can receive the updated profile information.
+  Future<void> updateUserDisplayName({
+    required String firstName,
+    required String lastName,
+  }) async {
+    // Get the currently authenticated Firebase user.
+    final user = _firebaseAuth.currentUser;
+
+    if (user == null) {
+      throw Exception('Please sign in to update your profile.');
+    }
+
+    // Combine the first and last names into Firebase's display name.
+    final fullName = '$firstName $lastName'.trim();
+
+    if (fullName.isEmpty) {
+      throw Exception('Name cannot be empty.');
+    }
+
+    // Save the updated name to Firebase Authentication.
+    await user.updateDisplayName(fullName);
+
+    // Reload the user to retrieve the latest Firebase profile.
+    await user.reload();
+
+    // Get the refreshed current-user instance.
+    final updatedUser = _firebaseAuth.currentUser;
+
+    if (updatedUser == null) {
+      throw Exception('Unable to reload the Firebase user.');
+    }
+
+    // Force a fresh ID token containing the updated profile claims.
+    await updatedUser.getIdToken(true);
+  }
+
+  /// Update the profile photo URL in Firebase Authentication.
+  Future<void> updateUserPhotoURL(String photoUrl) async {
+    // Get the current Firebase user.
+    final user = _firebaseAuth.currentUser;
+
+    if (user == null) {
+      throw Exception('Please sign in to update your profile photo.');
+    }
+
+    // Update Firebase's profile URL.
+    await user.updatePhotoURL(photoUrl);
+
+    // Reload the user to obtain the updated profile.
+    await user.reload();
+
+    // Retrieve the refreshed Firebase user.
+    final updatedUser = _firebaseAuth.currentUser;
+
+    if (updatedUser == null) {
+      throw Exception('Unable to reload the Firebase user.');
+    }
+
+    // Refresh the token so subsequent backend requests use the
+    // freshest available Firebase profile claims.
+    await updatedUser.getIdToken(true);
   }
 
 }
