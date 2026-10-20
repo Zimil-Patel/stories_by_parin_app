@@ -10,7 +10,11 @@ import '../../providers/gallery_members_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/app_background.dart';
 
-
+enum _GalleryMemberAction {
+  makeOwner,
+  makeViewer,
+  remove,
+}
 
 class GalleryMembersScreen extends StatefulWidget {
   final Project project;
@@ -52,6 +56,126 @@ class _GalleryMembersScreenState extends State<GalleryMembersScreen> {
     );
   }
 
+
+  /// Confirm and submit a role change.
+  Future<void> _confirmAndChangeRole({
+    required GalleryMember member,
+    required int projectId,
+    required GalleryRole newRole,
+  }) async {
+    final newRoleLabel =
+    newRole == GalleryRole.owner ? 'Owner' : 'Viewer';
+
+    final description = newRole == GalleryRole.owner
+        ? 'Owners can manage gallery membership and invitations.'
+        : 'Viewers can access gallery photos but cannot manage members.';
+
+    // Ask for confirmation before changing another member's permissions.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change member role?'),
+        content: Text(
+          'Change ${member.email} to $newRoleLabel?\n\n$description',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    // Submit the update through the provider and API service.
+    final provider = context.read<GalleryMembersProvider>();
+
+    final success = await provider.changeMemberRole(
+      projectId: projectId,
+      memberId: member.id,
+      role: newRole,
+    );
+
+    if (!mounted) return;
+
+    // Report the outcome without replacing the member list on an action error.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? '${member.email} is now a $newRoleLabel.'
+              : provider.memberActionError ??
+              'Could not update the member role.',
+        ),
+      ),
+    );
+  }
+
+  /// Confirm removal before revoking a member's access.
+  Future<void> _confirmAndRemoveMember({
+    required GalleryMember member,
+    required int projectId,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove access?'),
+          content: Text(
+            'Remove ${member.email} from this gallery?\n\n'
+                'They will no longer have access to this gallery.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Remove access'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmed != true) return;
+
+    final provider = context.read<GalleryMembersProvider>();
+
+    final success = await provider.removeMember(
+      projectId: projectId,
+      memberId: member.id,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Access removed for ${member.email}.'
+              : provider.memberActionError ??
+              'Could not remove gallery access.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Hide the management interface when the role is not Owner.
@@ -87,6 +211,11 @@ class _GalleryMembersScreenState extends State<GalleryMembersScreen> {
     final members = isCurrentProject
         ? provider.members
         : <GalleryMember>[];
+
+    // Used to avoid offering a demotion action for the last Owner.
+    final ownerCount = members
+        .where((member) => member.role == GalleryRole.owner)
+        .length;
 
     final error = isCurrentProject ? provider.error : null;
 
@@ -142,7 +271,9 @@ class _GalleryMembersScreenState extends State<GalleryMembersScreen> {
                     return _buildMemberTile(
                       context,
                       members[index],
-                      currentUserId: currentUserId
+                      currentUserId: currentUserId,
+                      projectId: widget.project.id,
+                      ownerCount: ownerCount,
                     );
                   },
                 ),
@@ -168,124 +299,6 @@ class _GalleryMembersScreenState extends State<GalleryMembersScreen> {
             title: const Text('Gallery Members'),
             scrolledUnderElevation: 0,
             backgroundColor: Colors.white24,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Display one registered member or pending invitation.
-  Widget _buildMemberTile(
-      BuildContext context,
-      GalleryMember member,
-      {
-        required int? currentUserId,
-      }
-      ) {
-    final theme = Theme.of(context);
-
-    final hasPhoto =
-        member.photoUrl != null && member.photoUrl!.trim().isNotEmpty;
-
-    final isCurrentUser =
-        currentUserId != null && member.userId == currentUserId;
-
-    final displayName = isCurrentUser
-        ? '${member.displayName} (You)'
-        : member.displayName;
-
-    final roleLabel = member.role?.name ?? 'unknown';
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
-
-        // Display the member's profile photo if available.
-        leading: ClipOval(
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: hasPhoto
-                ? CachedNetworkImage(
-              imageUrl: member.photoUrl!,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _defaultAvatar(context),
-              errorWidget: (_, __, ___) =>
-                  _defaultAvatar(context),
-            )
-                : _defaultAvatar(context),
-          ),
-        ),
-
-        title: Text(
-          displayName,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Show the email when the display name is different.
-              if (member.displayName != member.email)
-                Text(
-                  member.email,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-              const SizedBox(height: 6),
-
-              // Registered status distinguishes accounts from invitations.
-              Row(
-                children: [
-                  Icon(
-                    member.isRegistered
-                        ? Icons.check_circle_outline
-                        : Icons.schedule,
-                    size: 14,
-                    color: member.isRegistered
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: Text(
-                      member.isRegistered
-                          ? 'Registered'
-                          : 'Pending invitation',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Display the member's role.
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 5,
-          ),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            roleLabel[0].toUpperCase() + roleLabel.substring(1),
-            style: theme.textTheme.labelMedium,
           ),
         ),
       ),
@@ -335,6 +348,235 @@ class _GalleryMembersScreenState extends State<GalleryMembersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMemberTile(
+      BuildContext context,
+      GalleryMember member, {
+        required int? currentUserId,
+        required int projectId,
+        required int ownerCount,
+      }) {
+    final theme = Theme.of(context);
+    final provider = context.watch<GalleryMembersProvider>();
+
+    final isCurrentUser = currentUserId != null &&
+        member.userId == currentUserId;
+
+    final isUpdatingRole = provider.isUpdatingMemberRole &&
+        provider.updatingMemberId == member.id;
+
+    final isRemoving = provider.isRemovingMember &&
+        provider.removingMemberId == member.id;
+
+    final isBusy = isUpdatingRole || isRemoving;
+
+    final hasPhoto =
+        member.photoUrl != null &&
+            member.photoUrl!.trim().isNotEmpty;
+
+    final role = member.role;
+    final roleLabel = role?.name ?? 'unknown';
+
+    // Prepare allowed role changes.
+    final roleActions = <_GalleryMemberAction>[];
+
+    if (role == GalleryRole.viewer) {
+      roleActions.add(_GalleryMemberAction.makeOwner);
+    }
+
+    if (role == GalleryRole.owner && ownerCount > 1) {
+      roleActions.add(_GalleryMemberAction.makeViewer);
+    }
+
+    // Hide all management actions for the current user.
+    // Also fail closed if the current user's ID is unavailable.
+    final canManageMember =
+        currentUserId != null &&
+            !isCurrentUser &&
+            role != null;
+
+    // Don't offer removal of the last Owner.
+    final canRemove = canManageMember &&
+        !(role == GalleryRole.owner && ownerCount <= 1);
+
+    final canShowMenu = canManageMember &&
+        (roleActions.isNotEmpty || canRemove);
+
+    final roleBadge = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        roleLabel[0].toUpperCase() + roleLabel.substring(1),
+        style: theme.textTheme.labelMedium,
+      ),
+    );
+
+    Widget trailing = roleBadge;
+
+    if (isBusy) {
+      trailing = const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (canShowMenu) {
+      trailing = PopupMenuButton<_GalleryMemberAction>(
+        tooltip: 'Manage member',
+
+        onSelected: (action) {
+          switch (action) {
+            case _GalleryMemberAction.makeOwner:
+              _confirmAndChangeRole(
+                member: member,
+                projectId: projectId,
+                newRole: GalleryRole.owner,
+              );
+
+            case _GalleryMemberAction.makeViewer:
+              _confirmAndChangeRole(
+                member: member,
+                projectId: projectId,
+                newRole: GalleryRole.viewer,
+              );
+
+            case _GalleryMemberAction.remove:
+              _confirmAndRemoveMember(
+                member: member,
+                projectId: projectId,
+              );
+          }
+        },
+
+        itemBuilder: (context) => [
+          ...roleActions.map((action) {
+            final isOwnerAction =
+                action == _GalleryMemberAction.makeOwner;
+
+            return PopupMenuItem<_GalleryMemberAction>(
+              value: action,
+              child: Text(
+                isOwnerAction ? 'Make Owner' : 'Make Viewer',
+              ),
+            );
+          }),
+
+          if (canRemove)
+            PopupMenuItem<_GalleryMemberAction>(
+              value: _GalleryMemberAction.remove,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.person_remove_outlined,
+                    color: theme.colorScheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Remove access',
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              roleBadge,
+              const SizedBox(width: 2),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+
+        leading: ClipOval(
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: hasPhoto
+                ? CachedNetworkImage(
+              imageUrl: member.photoUrl!,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => _defaultAvatar(context),
+              errorWidget: (_, __, ___) => _defaultAvatar(context),
+            )
+                : _defaultAvatar(context),
+          ),
+        ),
+
+        title: Text(
+          isCurrentUser
+              ? '${member.displayName} (You)'
+              : member.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (member.displayName != member.email)
+                Text(
+                  member.email,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    member.isRegistered
+                        ? Icons.check_circle_outline
+                        : Icons.schedule,
+                    size: 14,
+                    color: member.isRegistered
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      member.isRegistered
+                          ? 'Registered'
+                          : 'Pending invitation',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        trailing: trailing,
       ),
     );
   }

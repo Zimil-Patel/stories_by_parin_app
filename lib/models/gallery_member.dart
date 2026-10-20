@@ -49,6 +49,27 @@ class GalleryMember {
     );
   }
 
+  /// Create an updated copy of this member.
+  GalleryMember copyWith({
+    GalleryRole? role,
+  }) {
+    return GalleryMember(
+      id: id,
+      galleryId: galleryId,
+      email: email,
+      userId: userId,
+      role: role ?? this.role,
+      invitedByUserId: invitedByUserId,
+      isRegistered: isRegistered,
+      firstName: firstName,
+      lastName: lastName,
+      fullName: fullName,
+      photoUrl: photoUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   bool get isOwner => role == GalleryRole.owner;
 
   bool get isViewer => role == GalleryRole.viewer;

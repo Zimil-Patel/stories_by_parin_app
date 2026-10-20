@@ -260,4 +260,69 @@ class ApiService {
       );
     }
   }
+
+  /// Change a member's role in a gallery.
+  /// The backend verifies that the current user is an Owner.
+  Future<void> updateGalleryMemberRole({
+    required int projectId,
+    required int memberId,
+    required GalleryRole role,
+  }) async {
+    // Obtain the Firebase token for the authenticated request.
+    final authHeaders = await _authorizedHeaders();
+
+    final response = await http.patch(
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/'
+            'gallery/members/$memberId',
+      ),
+      headers: {
+        ...authHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        // FastAPI expects "owner" or "viewer".
+        'role': role.name,
+      }),
+    );
+
+    // Read the API response to provide useful error messages.
+    final dynamic decoded =
+    response.body.isNotEmpty ? jsonDecode(response.body) : null;
+
+    if (response.statusCode != 200) {
+      final message = decoded is Map<String, dynamic>
+          ? decoded['detail']?.toString()
+          : null;
+
+      throw Exception(
+        message ?? 'Failed to update gallery member role.',
+      );
+    }
+  }
+
+  /// Remove a member or pending invitation from a gallery.
+  /// FastAPI verifies Owner permissions and protects the last Owner.
+  Future<void> removeGalleryMember({
+    required int projectId,
+    required int memberId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/'
+            'gallery/members/$memberId',
+      ),
+      headers: await _authorizedHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      final responseData = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      throw Exception(
+        responseData['detail'] ?? 'Failed to remove gallery member.',
+      );
+    }
+  }
 }
