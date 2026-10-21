@@ -51,6 +51,10 @@ class AuthProvider extends ChangeNotifier {
       _user = user;
       _isInitializing = false;
 
+      if (_isSigningUp) {
+        return;
+      }
+
       // Notify the UI and ProfileProvider about the auth state.
       notifyListeners();
     });

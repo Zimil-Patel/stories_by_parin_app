@@ -33,23 +33,45 @@ class AuthService {
     return token;
   }
 
-  /// Signup / create user with email and password
+  /// Sign up and ensure the Firebase display name is saved
+  /// before the backend synchronizes the user profile.
   Future<UserCredential> signUpWithEmail({
     required String firstName,
     required String lastName,
     required String email,
-    required String password}) async {
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
+    required String password,
+  }) async {
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
 
-    // Combine the first and last name for Firebase's display name.
-    final fullName = '$firstName $lastName'.trim();
+    final user = credential.user;
 
-    await credential.user?.updateDisplayName(fullName);
+    if (user == null) {
+      throw Exception('Firebase account creation failed.');
+    }
 
-    await credential.user?.reload();
+    final fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
+
+    if (fullName.isEmpty) {
+      throw Exception('First name or last name is required.');
+    }
+
+    // Save the display name to Firebase Authentication.
+    await user.updateDisplayName(fullName);
+
+    // Reload Firebase user data.
+    await user.reload();
 
     final updatedUser = _firebaseAuth.currentUser;
-    await updatedUser?.getIdToken();
+
+    if (updatedUser == null || updatedUser.displayName != fullName) {
+      throw Exception('Unable to save your name to Firebase.');
+    }
+
+    // Force a fresh token so the backend can receive updated claims.
+    await updatedUser.getIdToken(true);
 
     return credential;
   }
