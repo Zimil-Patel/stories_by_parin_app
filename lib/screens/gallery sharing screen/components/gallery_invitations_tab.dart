@@ -28,37 +28,45 @@ class GalleryInvitationsTab extends StatelessWidget {
             provider.invitations.isEmpty) {
           return _InvitationMessage(
             message: provider.error!,
-            onRetry: () => provider.fetchInvitations(projectId),
+            onRetry: () =>
+                provider.fetchInvitations(projectId),
           );
         }
-
-        if (provider.invitations.isEmpty) {
-          return const _InvitationMessage(
-            message: 'No invitations yet.',
-          );
-        }
-
 
         return RefreshIndicator(
-          onRefresh: () => provider.fetchInvitations(projectId),
+          onRefresh: () =>
+              provider.fetchInvitations(projectId),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
-              InviteByEmailForm(projectId: projectId),
+              InviteByEmailForm(
+                projectId: projectId,
+              ),
               const SizedBox(height: 16),
               if (provider.invitations.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text(
-                    'No invitations yet.',
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.mail_outline,
+                        size: 36,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'No invitations yet. Invite someone by email above.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 )
               else
                 ...provider.invitations.map(
                       (invitation) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(
+                      bottom: 10,
+                    ),
                     child: GalleryInvitationCard(
                       key: ValueKey(invitation['id']),
                       projectId: projectId,
@@ -69,7 +77,6 @@ class GalleryInvitationsTab extends StatelessWidget {
             ],
           ),
         );
-
       },
     );
   }
@@ -92,9 +99,12 @@ class _InvitationMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.mail_outline, size: 42),
+            const Icon(Icons.info_outline, size: 42),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
               OutlinedButton(

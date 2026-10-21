@@ -105,9 +105,11 @@ class ShareLinkCard extends StatelessWidget {
         'Unknown';
 
     final token = link['token']?.toString();
+    final isRevoked = link['revoked_at_utc'] != null &&
+        link['revoked_at_utc'].toString().isNotEmpty;
 
     return Card(
-      margin: EdgeInsets.zero,
+      margin: EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -115,8 +117,10 @@ class ShareLinkCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const CircleAvatar(
-                  child: Icon(Icons.link),
+                CircleAvatar(
+                  child: Icon(
+                    isRevoked ? Icons.link_off : Icons.link,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -127,14 +131,20 @@ class ShareLinkCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Revoke link',
-                  onPressed: () => _revoke(context),
-                  icon: const Icon(
-                    Icons.link_off,
-                    color: Colors.red,
+                if (isRevoked)
+                  const Chip(
+                    label: Text('Revoked'),
+                    avatar: Icon(Icons.block, size: 16),
+                  )
+                else
+                  IconButton(
+                    tooltip: 'Revoke link',
+                    onPressed: () => _revoke(context),
+                    icon: const Icon(
+                      Icons.link_off,
+                      color: Colors.red,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -145,14 +155,15 @@ class ShareLinkCard extends StatelessWidget {
                 'Token: $token',
                 maxLines: 2,
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => _copyToken(context),
-                  icon: const Icon(Icons.copy),
-                  label: const Text('Copy token'),
+              if (!isRevoked)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _copyToken(context),
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Copy token'),
+                  ),
                 ),
-              ),
             ],
           ],
         ),

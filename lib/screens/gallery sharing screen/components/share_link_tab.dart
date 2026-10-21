@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/gallery_sharing_provider.dart';
@@ -15,42 +16,52 @@ class ShareLinksTab extends StatelessWidget {
     return Consumer<GallerySharingProvider>(
       builder: (context, provider, _) {
         if (provider.isLoadingShareLinks) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (provider.error != null && provider.shareLinks.isEmpty) {
-          return _MessageView(
-            message: provider.error!,
-            onRetry: () => provider.fetchShareLinks(projectId),
+          return const Center(
+            child: CircularProgressIndicator(),
           );
         }
 
-        if (provider.shareLinks.isEmpty) {
-          return const _MessageView(
-            message: 'No share links yet.',
-            icon: Icons.link_off,
+        if (provider.error != null &&
+            provider.shareLinks.isEmpty) {
+          return _MessageView(
+            message: provider.error!,
+            onRetry: () =>
+                provider.fetchShareLinks(projectId),
           );
         }
 
         return RefreshIndicator(
-          onRefresh: () => provider.fetchShareLinks(projectId),
+          onRefresh: () =>
+              provider.fetchShareLinks(projectId),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
+
             children: [
-              CreateShareLinkForm(projectId: projectId),
+              CreateShareLinkForm(
+                projectId: projectId,
+              ),
               const SizedBox(height: 16),
               if (provider.shareLinks.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text(
-                    'No share links yet. Create one above.',
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.link_off,
+                        size: 36,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'No share links yet. Create one above.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 )
               else
                 ...provider.shareLinks.map(
-                  (link) => ShareLinkCard(
+                      (link) => ShareLinkCard(
                     key: ValueKey(link['id']),
                     projectId: projectId,
                     link: link,
@@ -66,12 +77,10 @@ class ShareLinksTab extends StatelessWidget {
 
 class _MessageView extends StatelessWidget {
   final String message;
-  final IconData icon;
   final VoidCallback? onRetry;
 
   const _MessageView({
     required this.message,
-    this.icon = Icons.info_outline,
     this.onRetry,
   });
 
@@ -83,12 +92,18 @@ class _MessageView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 42),
+            const Icon(Icons.info_outline, size: 42),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+              OutlinedButton(
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
             ],
           ],
         ),

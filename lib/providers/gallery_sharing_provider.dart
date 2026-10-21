@@ -128,9 +128,16 @@ class GallerySharingProvider extends ChangeNotifier {
         shareLinkId: shareLinkId,
       );
 
-      _shareLinks.removeWhere(
-            (link) => link['id'] == shareLinkId,
+      final index = _shareLinks.indexWhere(
+            (link) => link['id'].toString() == shareLinkId.toString(),
       );
+
+      if (index != -1) {
+        _shareLinks[index] = {
+          ..._shareLinks[index],
+          'revoked_at_utc': DateTime.now().toUtc().toIso8601String(),
+        };
+      }
 
       return true;
     } catch (error) {

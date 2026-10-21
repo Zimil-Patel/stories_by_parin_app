@@ -79,7 +79,11 @@ class GalleryInvitationCard extends StatelessWidget {
         'Unknown email';
 
     final role = invitation['role'] ?? 'viewer';
-    final status = invitation['status'] ?? 'pending';
+    final status = (invitation['status'] ?? 'pending')
+        .toString()
+        .toLowerCase();
+
+    final isPending = status == 'pending';
 
     final provider = context.watch<GallerySharingProvider>();
 
@@ -94,7 +98,8 @@ class GalleryInvitationCard extends StatelessWidget {
           'Role: $role\nStatus: $status',
         ),
         isThreeLine: true,
-        trailing: IconButton(
+        trailing: isPending
+            ? IconButton(
           tooltip: 'Revoke invitation',
           onPressed: provider.isPerformingAction
               ? null
@@ -102,6 +107,15 @@ class GalleryInvitationCard extends StatelessWidget {
           icon: const Icon(
             Icons.delete_outline,
             color: Colors.red,
+          ),
+        )
+            : Chip(
+          label: Text(
+            status == 'accepted'
+                ? 'Accepted'
+                : status == 'revoked'
+                ? 'Revoked'
+                : status,
           ),
         ),
       ),

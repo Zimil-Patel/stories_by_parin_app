@@ -36,7 +36,9 @@ class DashboardScreen extends StatelessWidget {
               backgroundColor: Colors.white24,
 
               actions: [
+                const RequestGalleryAccessAppBarAction(),
                 ProfileAvatarButton(),
+
               ],
             ),
           ),
@@ -73,8 +75,6 @@ class DashboardScreen extends StatelessWidget {
                     );
                   },
                 ),
-
-                const RequestGalleryAccessAppBarAction(),
 
               ],
             ),
