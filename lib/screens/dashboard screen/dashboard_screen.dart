@@ -6,6 +6,7 @@ import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/profile_provider.dart';
 import 'package:stories_by_parin/widgets/app_background.dart';
 
+import '../../services/request_gallery_access_app_bar_action.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../project screen/project_screen.dart';
 import 'components/dashboard_action_card.dart';
@@ -72,6 +73,8 @@ class DashboardScreen extends StatelessWidget {
                     );
                   },
                 ),
+
+                const RequestGalleryAccessAppBarAction(),
 
               ],
             ),

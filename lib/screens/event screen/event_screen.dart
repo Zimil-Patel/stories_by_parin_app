@@ -17,6 +17,7 @@ import 'package:stories_by_parin/widgets/app_background.dart';
 import 'package:stories_by_parin/widgets/gallery_members_setting_tile.dart';
 
 import '../../utils/images.dart';
+import '../../widgets/gallery_sharing_app_bar_action.dart';
 import '../selfie result screen/selfie_result_screen.dart';
 import '../selfie screen/selfie_search_screen.dart';
 import 'components/find_me_card.dart';
@@ -66,6 +67,7 @@ class _EventScreenState extends State<EventScreen> {
 
               actions: [
                 GalleryMembersAppBarAction(project: widget.project),
+                GallerySharingAppBarAction(project: widget.project),
               ],
             ),
           ),

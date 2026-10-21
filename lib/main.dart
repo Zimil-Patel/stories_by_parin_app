@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/event_provider.dart';
 import 'package:stories_by_parin/providers/gallery_members_provider.dart';
+import 'package:stories_by_parin/providers/gallery_sharing_provider.dart';
 import 'package:stories_by_parin/providers/people_provider.dart';
 import 'package:stories_by_parin/providers/person_photo_provider.dart';
 import 'package:stories_by_parin/providers/photo_provider.dart';
@@ -56,6 +57,7 @@ class StoriesBYP extends StatelessWidget {
 
         ChangeNotifierProvider(create: (_) => ProjectProvider()),
         ChangeNotifierProvider(create: (_) => GalleryMembersProvider(),),
+        ChangeNotifierProvider(create: (_) => GallerySharingProvider(),),
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => PhotoProvider()),
         ChangeNotifierProvider(create: (_) => PeopleProvider()),
