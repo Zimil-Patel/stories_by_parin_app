@@ -240,6 +240,43 @@ class ApiService {
         .toList();
   }
 
+  /// Fetch all favourited photos across a project.
+  /// The backend restricts this endpoint to gallery Owners.
+  Future<List<Photo>> getProjectFavouritePhotos(
+      int projectId,
+      ) async {
+    final response = await http.get(
+      Uri.parse(
+        '${AppConfig.baseUrl}/projects/$projectId/favourites',
+      ),
+      headers: await _authorizedHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      final responseData = response.body.isNotEmpty
+          ? jsonDecode(response.body)
+          : null;
+
+      final message = responseData is Map<String, dynamic>
+          ? responseData['detail']?.toString()
+          : null;
+
+      throw Exception(
+        message ?? 'Failed to load favourite photos.',
+      );
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data
+        .map(
+          (json) => Photo.fromJson(
+        json as Map<String, dynamic>,
+      ),
+    )
+        .toList();
+  }
+
   /// Update the favourite status of a photo.
   Future<void> setPhotoFavourite({
     required int photoId,

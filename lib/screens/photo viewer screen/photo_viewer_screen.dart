@@ -26,6 +26,7 @@ class PhotoViewerScreen extends StatefulWidget {
 
 class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   late int _currentIndex;
+  late List<Photo> _photos;
 
   // Keep one page controller for the lifetime of this screen.
   late final PageController _pageController;
@@ -40,6 +41,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   void initState() {
     super.initState();
 
+    _photos = List<Photo>.of(widget.photos);
     _currentIndex = widget.initialIndex;
 
     _pageController = PageController(
@@ -112,11 +114,11 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
     for (final photoIndex in indexesToPreload) {
       if (photoIndex < 0 ||
-          photoIndex >= widget.photos.length) {
+          photoIndex >= _photos.length) {
         continue;
       }
 
-      final photo = widget.photos[photoIndex];
+      final photo = _photos[photoIndex];
 
       final thumbnailUrl =
           '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail';
@@ -185,18 +187,18 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
       );
     }
 
-    final currentPhotoId = widget.photos[_currentIndex].id;
+    final currentPhotoId = _photos[_currentIndex].id;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
           PhotoViewGallery.builder(
-            itemCount: widget.photos.length,
+            itemCount: _photos.length,
             pageController: _pageController,
 
             builder: (context, index) {
-              final photo = widget.photos[index];
+              final photo = _photos[index];
 
               final thumbnailUrl =
                   '${AppConfig.baseUrl}/photos/${photo.id}/thumbnail'
@@ -312,7 +314,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
             top: MediaQuery.of(context).padding.top + 12,
             right: 16,
             child: Text(
-              '${_currentIndex + 1} / ${widget.photos.length}',
+              '${_currentIndex + 1} / ${_photos.length}',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,

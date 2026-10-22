@@ -18,6 +18,7 @@ import 'package:stories_by_parin/widgets/gallery_members_setting_tile.dart';
 
 import '../../utils/images.dart';
 import '../../widgets/gallery_sharing_app_bar_action.dart';
+import '../favourite screen/favourite_screen.dart';
 import '../selfie result screen/selfie_result_screen.dart';
 import '../selfie screen/selfie_search_screen.dart';
 import 'components/find_me_card.dart';
@@ -109,6 +110,7 @@ class _EventScreenState extends State<EventScreen> {
                       }
 
                       final events = provider.events;
+                      final showFavourites = widget.project.isOwner;
 
                       return RefreshIndicator(
                         onRefresh: () {
@@ -125,7 +127,7 @@ class _EventScreenState extends State<EventScreen> {
                             bottom: 16,
                           ),
                           physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: events.length,
+                          itemCount: events.length + (showFavourites ? 1 : 0),
 
 
                           separatorBuilder: (
@@ -135,11 +137,26 @@ class _EventScreenState extends State<EventScreen> {
                             return const SizedBox(height: 8);
                           },
 
-                          itemBuilder: (
-                              context,
-                              index,
-                              ) {
-                            final event = events[index];
+                          itemBuilder: (context, index) {
+
+                            // Show the Favourites tile first, for gallery owners only.
+                            if (showFavourites && index == 0) {
+                              return _FavouritesCard(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FavouritesScreen(
+                                        project: widget.project,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }
+
+                            final eventIndex = index - (showFavourites ? 1 : 0);
+                            final event = events[eventIndex];
 
                             return _EventCard(
                               eventName: event.name,
@@ -384,6 +401,74 @@ class _EventScreenState extends State<EventScreen> {
     );
   }
 }
+
+
+class _FavouritesCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _FavouritesCard({
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.pink.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: Colors.pink,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Favourites',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'View all your favourite photos',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
 // ---------------------------------------------------------

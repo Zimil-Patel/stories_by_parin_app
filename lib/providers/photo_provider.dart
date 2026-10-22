@@ -4,103 +4,152 @@ import 'package:stories_by_parin/models/photo_model.dart';
 import 'package:stories_by_parin/services/api_service.dart';
 
 class PhotoProvider extends ChangeNotifier {
-
   final _apiService = ApiService.apiService;
 
   List<Photo> _photos = [];
+  List<Photo> _favouritePhotos = [];
+
   bool _isLoading = false;
+  bool _isLoadingFavourites = false;
+
   String? _error;
+  String? _favouritesError;
+
   bool _newestFirst = false;
 
   List<Photo> get photos => _photos;
+  List<Photo> get favouritePhotos => _favouritePhotos;
 
   bool get isLoading => _isLoading;
+  bool get isLoadingFavourites => _isLoadingFavourites;
 
   String? get error => _error;
+  String? get favouritesError => _favouritesError;
 
   bool get newestFirst => _newestFirst;
 
   Future<void> fetchAllPhotosOfEvent(int eventId) async {
-
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    try{
-
+    try {
       _photos = await _apiService.getAllPhotosOfEvent(eventId);
-
-    } catch(error) {
-
+    } catch (error) {
       _error = error.toString();
-
     } finally {
-
       _isLoading = false;
       notifyListeners();
+    }
+  }
 
+  /// Fetch all favourited photos across the project.
+  Future<void> fetchProjectFavouritePhotos(int projectId) async {
+    _isLoadingFavourites = true;
+    _favouritesError = null;
+    notifyListeners();
+
+    try {
+      final fetchedPhotos =
+      await _apiService.getProjectFavouritePhotos(projectId);
+
+      _favouritePhotos = sortPhotos(
+        fetchedPhotos.where((photo) => photo.isFavourite).toList(),
+      );
+
+      // Keep favourite photos available to FavouriteButton,
+      // even when they belong to another event.
+      mergePhotos(fetchedPhotos);
+    } catch (error) {
+      _favouritesError = error.toString();
+    } finally {
+      _isLoadingFavourites = false;
+      notifyListeners();
     }
   }
 
   Future<void> refreshPhotoSilently(int eventId) async {
-    try{
-      final latestPhotos = await _apiService.getAllPhotosOfEvent(eventId);
+    try {
+      final latestPhotos =
+      await _apiService.getAllPhotosOfEvent(eventId);
 
-      final existingIds = _photos.map((e) => e.id).toSet();
+      final existingIds = _photos.map((photo) => photo.id).toSet();
 
-      final newPhotos = latestPhotos.where((photo) => !existingIds.contains(photo.id),);
+      final newPhotos = latestPhotos.where(
+            (photo) => !existingIds.contains(photo.id),
+      );
 
-      if(newPhotos.isEmpty){
+      if (newPhotos.isEmpty) {
         return;
       }
 
-      /// update if new photo detected
-      _photos = [..._photos, ...newPhotos];
-
-      _photos = sortPhotos(photos);
-
+      _photos = sortPhotos([..._photos, ...newPhotos]);
       notifyListeners();
-
-    } catch(e) {
+    } catch (error) {
       debugPrint('=> Silent Photo refresh failed: $error');
     }
   }
 
   Future<bool> toggleFavourite(int photoId) async {
-    final photoIndex = _photos.indexWhere((photo) => photo.id == photoId);
+    final photoIndex =
+    _photos.indexWhere((photo) => photo.id == photoId);
 
-    if(photoIndex == -1){
+    if (photoIndex == -1) {
       return false;
     }
 
     final currentPhoto = _photos[photoIndex];
-
     final newFavouriteStatus = !currentPhoto.isFavourite;
 
-    _photos[photoIndex] = currentPhoto.copyWith(isFavourite: newFavouriteStatus);
+    // Save the previous favourites list in case the request fails.
+    final previousFavouritePhotos = List<Photo>.from(_favouritePhotos);
+
+    final updatedPhoto = currentPhoto.copyWith(
+      isFavourite: newFavouriteStatus,
+    );
+
+    // Update the main photo list.
+    _photos[photoIndex] = updatedPhoto;
+
+    // Update the favourites screen immediately.
+    _favouritePhotos.removeWhere((photo) => photo.id == photoId);
+
+    if (newFavouriteStatus) {
+      _favouritePhotos.add(updatedPhoto);
+      _favouritePhotos = sortPhotos(_favouritePhotos);
+    }
 
     notifyListeners();
 
-    try{
-
-      await _apiService.setPhotoFavourite(photoId: photoId, isFavourite: newFavouriteStatus);
-      return true;
-
-    } catch (error) {
-      _photos[photoIndex] = currentPhoto;
-      notifyListeners();
-      debugPrint(
-        '=> Failed to update favourite: $error',
+    try {
+      await _apiService.setPhotoFavourite(
+        photoId: photoId,
+        isFavourite: newFavouriteStatus,
       );
+      return true;
+    } catch (error) {
+      // Restore the photo's previous favourite status.
+      final currentIndex =
+      _photos.indexWhere((photo) => photo.id == photoId);
 
+      if (currentIndex != -1) {
+        _photos[currentIndex] = currentPhoto;
+      }
+
+      _favouritePhotos = previousFavouritePhotos;
+
+      notifyListeners();
+
+      debugPrint('=> Failed to update favourite: $error');
       return false;
     }
   }
 
-  void toggleSortOrder(){
+  void toggleSortOrder() {
     _newestFirst = !_newestFirst;
 
     _photos = sortPhotos(_photos);
+    _favouritePhotos = sortPhotos(_favouritePhotos);
 
     notifyListeners();
   }
@@ -110,37 +159,21 @@ class PhotoProvider extends ChangeNotifier {
 
     sortedPhotos.sort((a, b) {
       final comparison = a.id.compareTo(b.id);
-
-      if(_newestFirst) {
-        return -comparison;
-      }
-
-      return comparison;
-    },);
+      return _newestFirst ? -comparison : comparison;
+    });
 
     return sortedPhotos;
   }
 
-  /// Merge photos loaded by another provider into this provider.
-  ///
-  /// This is useful for screens such as Person Photos or Face Search,
-  /// where the photos come from a different API/provider but we still
-  /// want FavouriteButton to use the central PhotoProvider state.
+  /// Merge photos from other screens into the central photo list.
   void mergePhotos(List<Photo> newPhotos) {
     for (final newPhoto in newPhotos) {
-      final existingIndex = _photos.indexWhere(
-            (photo) => photo.id == newPhoto.id,
-      );
+      final existingIndex =
+      _photos.indexWhere((photo) => photo.id == newPhoto.id);
 
       if (existingIndex == -1) {
-        // Photo is not currently known by PhotoProvider,
-        // so add it.
         _photos.add(newPhoto);
       } else {
-        // Photo already exists.
-        //
-        // Replace it with the latest version returned by the API.
-        // This keeps isFavourite up to date.
         _photos[existingIndex] = newPhoto;
       }
     }
