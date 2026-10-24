@@ -3,6 +3,7 @@ class UserModel {
   final String firebaseUid;
   final String firstName;
   final String lastName;
+  final bool isAdmin;
   final String email;
   final bool emailVerified;
   final String? mobileNumber;
@@ -15,6 +16,7 @@ class UserModel {
     required this.firebaseUid,
     required this.firstName,
     required this.lastName,
+    required this.isAdmin,
     required this.email,
     required this.emailVerified,
     required this.mobileNumber,
@@ -29,6 +31,7 @@ class UserModel {
       firebaseUid: json['firebase_uid'] as String,
       firstName: json['first_name'] as String? ?? '',
       lastName: json['last_name'] as String? ?? '',
+      isAdmin: json['is_admin'] as bool? ?? false,
       email: json['email'] as String,
       emailVerified: json['email_verified'] as bool? ?? false,
       mobileNumber: json['mobile_number'] as String?,

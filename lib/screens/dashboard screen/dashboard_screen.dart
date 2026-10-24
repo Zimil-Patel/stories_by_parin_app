@@ -9,6 +9,7 @@ import 'package:stories_by_parin/widgets/app_background.dart';
 import '../../services/request_gallery_access_app_bar_action.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../project screen/project_screen.dart';
+import 'admin_dashboard_screen.dart';
 import 'components/dashboard_action_card.dart';
 import 'components/dashboard_headers.dart';
 
@@ -59,6 +60,24 @@ class DashboardScreen extends StatelessWidget {
                 DashboardHeader(
                   firstName: profile.firstName,
                 ),
+
+                if (profile.isAdmin) ...[
+                  const SizedBox(height: 30),
+
+                  DashboardActionCard(
+                    title: 'Admin Dashboard',
+                    subtitle: 'Manage all projects, galleries, and access',
+                    icon: Icons.admin_panel_settings_outlined,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminDashboardScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
 
                 const SizedBox(height: 30),
 

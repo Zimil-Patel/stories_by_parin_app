@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stories_by_parin/providers/admin_provider.dart';
 import 'package:stories_by_parin/providers/auth_provider.dart';
 import 'package:stories_by_parin/providers/event_provider.dart';
 import 'package:stories_by_parin/providers/gallery_members_provider.dart';
@@ -56,6 +57,7 @@ class StoriesBYP extends StatelessWidget {
         ),
 
         ChangeNotifierProvider(create: (_) => ProjectProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => GalleryMembersProvider(),),
         ChangeNotifierProvider(create: (_) => GallerySharingProvider(),),
         ChangeNotifierProvider(create: (_) => EventProvider()),
